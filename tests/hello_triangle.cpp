@@ -26,88 +26,53 @@ SOFTWARE.
 #include <engine.h>
 #include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
-#include <file_utility.h>
+#include <graphics.h>
 
-#define EBO_DOUBLE_TRIANGLE
+//#define EBO_DOUBLE_TRIANGLE
+
+class HelloTriangleDrawingProgram : public DrawingProgram
+{
+public:
+	void Init() override;
+	void Draw() override;
+private:
 
 #ifndef EBO_DOUBLE_TRIANGLE
-static float vertices[] = {
-	-0.5f, -0.5f, 0.0f,
-	 0.5f, -0.5f, 0.0f,
-	 0.0f,  0.5f, 0.0f
-};
+	float vertices[9] = {
+		-0.5f, -0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 0.0f,  0.5f, 0.0f
+	};
 #else
-static float vertices[] = {
-	 0.5f,  0.5f, 0.0f,  // top right
-	 0.5f, -0.5f, 0.0f,  // bottom right
-	-0.5f, -0.5f, 0.0f,  // bottom left
-	-0.5f,  0.5f, 0.0f   // top left 
-};
-static unsigned int indices[] = {  
-	// note that we start from 0!
-	0, 1, 3,   // first triangle
-	1, 2, 3    // second triangle
-};
+	float vertices[12] = {
+		 0.5f,  0.5f, 0.0f,  // top right
+		 0.5f, -0.5f, 0.0f,  // bottom right
+		-0.5f, -0.5f, 0.0f,  // bottom left
+		-0.5f,  0.5f, 0.0f   // top left 
+	};
+	unsigned int indices[6] = {
+		// note that we start from 0!
+		0, 1, 3,   // first triangle
+		1, 2, 3    // second triangle
+	};
 
-static unsigned int EBO; // Element Buffer Object
+	unsigned int EBO; // Element Buffer Object
 #endif
 
-static unsigned int VBO; //Vertex Buffer Object
-static unsigned int VAO; //Vertex Array Object
-static unsigned int shaderProgram;
+	unsigned int VBO; //Vertex Buffer Object
+	unsigned int VAO; //Vertex Array Object
+	Shader shaderProgram;
 
-void InitTriangle()
+};
+
+void HelloTriangleDrawingProgram::Init()
 {
 	glGenBuffers(1, &VBO);
 #ifdef EBO_DOUBLE_TRIANGLE
 	glGenBuffers(1, &EBO);
 #endif
 	
-	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	const auto vertexShaderProgram = LoadFile("shaders/vertex_shader.glsl");
-	const char* vertexShaderChar = vertexShaderProgram.c_str();
-
-	glShaderSource(vertexShader, 1, &vertexShaderChar, NULL);
-	glCompileShader(vertexShader);
-	//Check success status of shader compilation 
-	int  success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return;
-	}
-
-	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	auto fragmentShaderProgram = LoadFile("shaders/fragment_shader.glsl");
-	const char* fragmentShaderChar = fragmentShaderProgram.c_str();
-	glShaderSource(fragmentShader, 1, &fragmentShaderChar, NULL);
-	glCompileShader(fragmentShader);
-	//Check success status of shader compilation 
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-		return;
-	}
-
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	//Check if shader program was linked correctly
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cerr << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
-		return;
-	}
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	shaderProgram.Init("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -129,9 +94,9 @@ void InitTriangle()
 	
 }
 
-void DrawTriangle()
+void HelloTriangleDrawingProgram::Draw()
 {
-	glUseProgram(shaderProgram);
+	shaderProgram.Bind();
 
 	glBindVertexArray(VAO);
 #ifndef EBO_DOUBLE_TRIANGLE
@@ -146,8 +111,7 @@ int main()
 {
 	Engine engine;
 
-	engine.AddInitFunction(InitTriangle);
-	engine.AddDrawingFunction(DrawTriangle);
+	engine.AddDrawingProgram(new HelloTriangleDrawingProgram());
 
 	engine.Init();
 	engine.GameLoop();

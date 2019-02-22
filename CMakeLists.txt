@@ -36,10 +36,8 @@ set(SFML_STATIC_LIBRARIES TRUE)
 add_subdirectory(${SFML_DIR})
 include_directories(${SFML_DIR}/include ${SFML_DIR}/src)
 
-message("SFML lib: ${SFML_LIBRARIES} ${SFML_DEPEDENCIES} ")
-
 LIST(APPEND SFGE_LIBRARIES
-		sfml-audio sfml-graphics sfml-window sfml-system)
+		sfml-graphics sfml-window sfml-system)
 
 #glew
 set(GLEW_DIR ${EXTERNAL_DIR}/glew)

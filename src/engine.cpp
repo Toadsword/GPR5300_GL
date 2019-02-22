@@ -1,10 +1,19 @@
 
 #include <iostream>
 #include <engine.h>
-
+#include<graphics.h>
 #include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
 #include "imgui-SFML.h"
+
+Engine::~Engine()
+{
+	for(auto* drawingProgram : drawingPrograms)
+	{
+		delete drawingProgram;
+	}
+	drawingPrograms.clear();
+}
 
 void Engine::Init()
 {
@@ -22,9 +31,9 @@ void Engine::Init()
 	{
 		std::cerr << "Error: " << glewGetErrorString(err) << "\n";
 	}
-	for (auto func : initFunctions)
+	for (auto drawingProgram : drawingPrograms)
 	{
-		func();
+		drawingProgram->Init();
 	}
 }
 
@@ -59,9 +68,9 @@ void Engine::GameLoop()
 		// effacement les tampons de couleur/profondeur
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		for(auto func : drawingFunctions)
+		for (auto drawingProgram : drawingPrograms)
 		{
-			func();
+			drawingProgram->Draw();
 		}
 
 		// termine la trame courante (en interne, échange les deux tampons de rendu)
@@ -71,15 +80,11 @@ void Engine::GameLoop()
 
 }
 
-void Engine::AddInitFunction(std::function<void(void)> func)
+void Engine::AddDrawingProgram(DrawingProgram* hello_triangle_drawing_program)
 {
-	initFunctions.push_back(func);
+	drawingPrograms.push_back(hello_triangle_drawing_program);
 }
 
-void Engine::AddDrawingFunction(std::function<void(void)> func)
-{
-	drawingFunctions.push_back(func);
-}
 
 void Engine::SwitchWireframeMode()
 {
