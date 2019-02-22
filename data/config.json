@@ -1,0 +1,14 @@
+{
+	"screenResolution": {
+		"x": 1280,
+		"y": 720
+	},
+	"gravity": {
+		"x": 0,
+		"y": 9.81
+	},
+	"maxFramerate": 60,
+	"scenesList": [
+		"data/scenes/test.scene"
+	]
+}
