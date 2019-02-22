@@ -44,7 +44,6 @@ LIST(APPEND SFGE_LIBRARIES
 #glew
 set(GLEW_DIR ${EXTERNAL_DIR}/glew)
 add_compile_definitions(GLEW_STATIC)
-
 include_directories(${GLEW_DIR}/include)
 add_subdirectory(${GLEW_DIR})
 LIST(APPEND SFGE_LIBRARIES

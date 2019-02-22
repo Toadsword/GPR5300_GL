@@ -2,8 +2,9 @@
 #include <iostream>
 #include <engine.h>
 
-#include "GL/glew.h"
+#include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
+#include "imgui-SFML.h"
 
 void Engine::Init()
 {
@@ -46,6 +47,13 @@ void Engine::GameLoop()
 				// on ajuste le viewport lorsque la fenêtre est redimensionnée
 				glViewport(0, 0, event.size.width, event.size.height);
 			}
+			else if(event.type == sf::Event::KeyPressed)
+			{
+				if(event.key.code == sf::Keyboard::Key::Num1)
+				{
+					SwitchWireframeMode();
+				}
+			}
 		}
 
 		// effacement les tampons de couleur/profondeur
@@ -71,5 +79,12 @@ void Engine::AddInitFunction(std::function<void(void)> func)
 void Engine::AddDrawingFunction(std::function<void(void)> func)
 {
 	drawingFunctions.push_back(func);
+}
+
+void Engine::SwitchWireframeMode()
+{
+	glPolygonMode(GL_FRONT_AND_BACK, wireframeMode?GL_FILL:GL_LINE);
+	wireframeMode = !wireframeMode;
+	
 }
 
