@@ -48,9 +48,15 @@ LIST(APPEND SFGE_LIBRARIES
 		glew)
 #gli
 set(GLI_DIR ${EXTERNAL_DIR}/gli)
+IF(NOT EXISTS ${GLI_DIR})
+message("Please do git submodule update --init --recursive")
+ENDIF()
 include_directories(${GLI_DIR})
 #glm
 set(GLM_DIR ${EXTERNAL_DIR}/glm)
+IF(NOT EXISTS ${GLM_DIR})
+message("Please do git submodule update --init --recursive")
+ENDIF()
 include_directories(${GLM_DIR})
 #SFML Imgui
 set(SFML_IMGUI ${EXTERNAL_DIR}/imgui-sfml/)
@@ -117,10 +123,10 @@ if(APPLE)
 ENDIF()
 
 #copy folder to build
-add_custom_command(TARGET COMMON PRE_BUILD
+add_custom_command(TARGET COMMON POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders)
-add_custom_command(TARGET COMMON PRE_BUILD
+add_custom_command(TARGET COMMON POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
 
@@ -145,4 +151,10 @@ foreach(course_file ${COURSE_FILES} )
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR})
   ENDIF()
+  add_custom_command(TARGET ${course_name} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders)
+add_custom_command(TARGET ${course_name} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
 endforeach()

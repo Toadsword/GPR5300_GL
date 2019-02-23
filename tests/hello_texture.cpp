@@ -1,7 +1,10 @@
 #include <engine.h>
 #include <graphics.h>
-#include "GL/glew.h"
+#include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
+#include <SFML/Graphics/Texture.hpp>
+
+#define OTHER_TEXTURE
 
 class HelloTextureDrawingProgram : public DrawingProgram
 {
@@ -32,11 +35,16 @@ private:
 	unsigned int VBO[2] = {}; //Vertex Buffer Object
 	unsigned int VAO = 0; //Vertex Array Object
 	unsigned int EBO = 0; // Element Buffer Object
-	GLuint texture;
+	GLuint textureWall;
+#ifdef OTHER_TEXTURE
+	sf::Texture sfTextureOtherPlay;
+	GLuint textureOtherPlay;
+#endif
 };
 
 void HelloTextureDrawingProgram::Init()
 {
+
 	programName = "HelloTexture";
 
 	shaders.push_back(&shaderProgram);
@@ -46,9 +54,17 @@ void HelloTextureDrawingProgram::Init()
 
 	shaderProgram.Init(
 		"shaders/texture_vertex.glsl",
-		"shaders/texture_fragment.glsl");
-	texture = CreateTexture("data/sprites/wall.dds");
-
+#ifdef OTHER_TEXTURE
+		"shaders/texture_other_fragment.glsl"
+#else
+		"shaders/texture_fragment.glsl""
+#endif
+	);
+	textureWall = CreateTexture("data/sprites/wall.dds");
+#ifdef OTHER_TEXTURE
+	sfTextureOtherPlay.loadFromFile("data/sprites/other_play.png");
+	textureOtherPlay = sfTextureOtherPlay.getNativeHandle();
+#endif
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object
 	glBindVertexArray(VAO);
@@ -70,10 +86,20 @@ void HelloTextureDrawingProgram::Init()
 void HelloTextureDrawingProgram::Draw()
 {
 	shaderProgram.Bind();
-	glBindTexture(GL_TEXTURE_2D, texture);
+#ifdef OTHER_TEXTURE
+	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture1"), 0);
+	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture2"), 1);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textureWall);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, textureOtherPlay);
+#else
+	glBindTexture(GL_TEXTURE_2D, textureWall);
+#endif
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+	
 }
 
 

@@ -96,9 +96,9 @@ void Engine::GameLoop()
 			drawingProgram->Draw();
 		}
 
-		window->pushGLStates();
+		//window->pushGLStates();
 		ImGui::SFML::Render(*window);
-		window->popGLStates();
+		//window->popGLStates();
 
 		// termine la trame courante (en interne, échange les deux tampons de rendu)
 		window->display();
