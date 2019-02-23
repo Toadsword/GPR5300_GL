@@ -1,13 +1,16 @@
 #pragma once
 #include <string>
+#include <vector>
+
 
 class Shader
 {
 public:
 	void Init(std::string vertexShaderPath, std::string fragmentShaderPath);
 	void Bind();
+	int GetProgram();
 private:
-	unsigned int shaderProgram = 0;
+	int shaderProgram = 0;
 };
 
 class DrawingProgram
@@ -15,4 +18,14 @@ class DrawingProgram
 public:
 	virtual void Init() = 0;
 	virtual void Draw() = 0;
+	
+	const std::string& GetProgramName();
+	const std::vector<Shader*>& GetShaders();
+
+protected:
+	std::vector<Shader*> shaders;
+	std::string programName;
 };
+
+
+unsigned int CreateTexture(char const* filename);

@@ -46,6 +46,12 @@ include_directories(${GLEW_DIR}/include)
 add_subdirectory(${GLEW_DIR})
 LIST(APPEND SFGE_LIBRARIES
 		glew)
+#gli
+set(GLI_DIR ${EXTERNAL_DIR}/gli)
+include_directories(${GLI_DIR})
+#glm
+set(GLM_DIR ${EXTERNAL_DIR}/glm)
+include_directories(${GLM_DIR})
 #SFML Imgui
 set(SFML_IMGUI ${EXTERNAL_DIR}/imgui-sfml/)
 set(IMGUI_ROOT ${EXTERNAL_DIR}/imgui/)
