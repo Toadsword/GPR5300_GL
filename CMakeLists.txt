@@ -79,21 +79,12 @@ if(APPLE)
 	endif()
 	include_directories(${Boost_INCLUDE_DIRS})
 	LIST(APPEND SFGE_LIBRARIES
-	  ${Boost_LIBRARIES})
+			${Boost_LIBRARIES})
 endif(APPLE)
 set(UTILITIES_DIR ${EXTERNAL_DIR}/utilities/)
 include_directories(${UTILITIES_DIR})
 
 #MISCELLANEOUS UTILITIES
-if(UNIX AND NOT APPLE)
-	check_include_file(uuid/uuid.h HAVE_UUID_UUID_H)
-	check_library_exists(uuid uuid_generate "/lib;/usr/lib;/usr/local/lib" HAVE_UUID_LIB)
-
-	if (HAVE_UUID_LIB)
-		set(CMAKE_REQUIRED_LIBRARIES "uuid;${CMAKE_REQUIRED_LIBRARIES}")
-	endif (HAVE_UUID_LIB)
-endif()
-
 
 set(REMOTERY_DIR ${EXTERNAL_DIR}/Remotery)
 add_subdirectory(${REMOTERY_DIR})
@@ -129,7 +120,8 @@ add_custom_command(TARGET COMMON POST_BUILD
 add_custom_command(TARGET COMMON POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
-
+file(COPY data/ DESTINATION ${CMAKE_BINARY_DIR}/data/)
+file(COPY shaders/ DESTINATION ${CMAKE_BINARY_DIR}/shaders/)
 #SFGE COURSES
 SET(SFGE_COURSE_DIR ${CMAKE_SOURCE_DIR}/tests)
 file(GLOB COURSE_FILES ${SFGE_COURSE_DIR}/*.cpp )
@@ -137,12 +129,12 @@ foreach(course_file ${COURSE_FILES} )
     # I used a simple string replace, to cut off .cpp.
     file(RELATIVE_PATH course_relative_path ${SFGE_COURSE_DIR} ${course_file} )
     string( REPLACE ".cpp" "" course_name ${course_relative_path} )
-    add_executable(${course_name} ${SFGE_COURSE_DIR}/${course_relative_path})
+    add_executable(${course_name} ${SFGE_COURSE_DIR}/${course_relative_path} tests/hello_transform.cpp)
     # Make sure YourLib is linked to each app
     target_link_libraries(${course_name} PUBLIC COMMON)
 	set_property(TARGET ${course_name} PROPERTY CXX_STANDARD 17)
 	IF(UNIX)
-		set_target_properties(${course_name} PROPERTIES COMPILE_FLAGS "-save-temps -arch=native")
+		set_target_properties(${course_name} PROPERTIES COMPILE_FLAGS "-save-temps -ffast-math")
 	ENDIF(UNIX)
 	set_target_properties (${course_name} PROPERTIES
     FOLDER Courses)

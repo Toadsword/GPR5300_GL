@@ -9,6 +9,16 @@
 
 class DrawingProgram;
 
+struct Configuration
+{
+	unsigned int screenSizeX = 800;
+	unsigned int screenSizeY = 600;
+
+	sf::Color bgColor = sf::Color::Black;
+
+	std::string windowName = "OpenGL";
+};
+
 class Engine
 {
 public:
@@ -21,6 +31,8 @@ public:
 
 	float GetDeltaTime();
 	float GetTimeSinceInit();
+
+	Configuration& GetConfiguration();
 	
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
 
@@ -32,7 +44,7 @@ private:
 	sf::RenderWindow* window = nullptr;
 	std::vector<DrawingProgram*> drawingPrograms;
 	
-
+	Configuration configuration;
 	sf::Clock deltaClock;
 	sf::Clock engineClock;
 	sf::Time dt;

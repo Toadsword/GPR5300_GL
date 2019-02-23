@@ -53,11 +53,11 @@ void HelloTextureDrawingProgram::Init()
 	glGenBuffers(1, &EBO);
 
 	shaderProgram.Init(
-		"shaders/texture_vertex.glsl",
+		"shaders/hello_texture/texture_vertex.glsl",
 #ifdef OTHER_TEXTURE
-		"shaders/texture_other_fragment.glsl"
+		"shaders/hello_texture/texture_other_fragment.glsl"
 #else
-		"shaders/texture_fragment.glsl""
+		"shaders/hello_texture/texture_fragment.glsl""
 #endif
 	);
 	textureWall = CreateTexture("data/sprites/wall.dds");
@@ -106,6 +106,13 @@ void HelloTextureDrawingProgram::Draw()
 int main()
 {
 	Engine engine;
+
+	auto& config = engine.GetConfiguration();
+	config.screenSizeX = 1024;
+	config.screenSizeY = 1024;
+	config.bgColor = sf::Color::Black;
+	config.windowName = "Hello Texture";
+
 	engine.AddDrawingProgram(new HelloTextureDrawingProgram());
 	engine.Init();
 	engine.GameLoop();

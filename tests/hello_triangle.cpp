@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #include <iostream>
+#include <cmath>
 #include <engine.h>
 #include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
@@ -86,7 +87,7 @@ void HelloTriangleDrawingProgram::Init()
 	glGenBuffers(1, &EBO);
 #endif
 	
-	shaderProgram.Init("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+	shaderProgram.Init("shaders/hello_triangle/vertex_shader.glsl", "shaders/hello_triangle/fragment_shader.glsl");
 
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object
@@ -131,6 +132,12 @@ void HelloTriangleDrawingProgram::Draw()
 int main()
 {
 	Engine engine;
+
+	auto& config = engine.GetConfiguration();
+	config.screenSizeX = 1024;
+	config.screenSizeY = 1024;
+	config.bgColor = sf::Color::White;
+	config.windowName = "Hello Triangle";
 
 	engine.AddDrawingProgram(new HelloTriangleDrawingProgram());
 

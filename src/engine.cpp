@@ -35,7 +35,7 @@ void Engine::Init()
 	settings.majorVersion = 4;
 	settings.minorVersion = 5;
 
-	window = new sf::RenderWindow(sf::VideoMode(800, 600), "OpenGL", sf::Style::Default, settings);
+	window = new sf::RenderWindow(sf::VideoMode(configuration.screenSizeX, configuration.screenSizeY), configuration.windowName, sf::Style::Default, settings);
 	//window->setVerticalSyncEnabled(true);
 	ImGui::SFML::Init(*window);
 
@@ -48,7 +48,7 @@ void Engine::Init()
 	{
 		drawingProgram->Init();
 	}
-	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(configuration.bgColor.r, configuration.bgColor.g, configuration.bgColor.b, configuration.bgColor.a);
 }
 
 void Engine::GameLoop()
@@ -100,7 +100,7 @@ void Engine::GameLoop()
 		ImGui::SFML::Render(*window);
 		//window->popGLStates();
 
-		// termine la trame courante (en interne, échange les deux tampons de rendu)
+		// termine la trame courante (en interne, ï¿½change les deux tampons de rendu)
 		window->display();
 
 	}
@@ -213,5 +213,10 @@ void Engine::SwitchWireframeMode()
 	glPolygonMode(GL_FRONT_AND_BACK, wireframeMode ? GL_FILL : GL_LINE);
 	wireframeMode = !wireframeMode;
 	
+}
+
+Configuration &Engine::GetConfiguration()
+{
+	return configuration;
 }
 
