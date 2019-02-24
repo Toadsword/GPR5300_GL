@@ -21,6 +21,7 @@ Engine::~Engine()
 {
 	for(auto* drawingProgram : drawingPrograms)
 	{
+		drawingProgram->Destroy();
 		delete drawingProgram;
 	}
 	drawingPrograms.clear();
@@ -35,7 +36,7 @@ void Engine::Init()
 	settings.majorVersion = 4;
 	settings.minorVersion = 5;
 
-	window = new sf::RenderWindow(sf::VideoMode(configuration.screenSizeX, configuration.screenSizeY), configuration.windowName, sf::Style::Default, settings);
+	window = new sf::RenderWindow(sf::VideoMode(configuration.screenWidth, configuration.screenHeight), configuration.windowName, sf::Style::Default, settings);
 	//window->setVerticalSyncEnabled(true);
 	ImGui::SFML::Init(*window);
 
@@ -72,6 +73,8 @@ void Engine::GameLoop()
 			else if (event.type == sf::Event::Resized)
 			{
 				glViewport(0, 0, event.size.width, event.size.height);
+				configuration.screenWidth = event.size.width;
+				configuration.screenHeight = event.size.height;
 			}
 			else if(event.type == sf::Event::KeyPressed)
 			{
@@ -100,7 +103,7 @@ void Engine::GameLoop()
 		ImGui::SFML::Render(*window);
 		//window->popGLStates();
 
-		// termine la trame courante (en interne, �change les deux tampons de rendu)
+		//switch framebuffer
 		window->display();
 
 	}

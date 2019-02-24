@@ -11,8 +11,8 @@ class DrawingProgram;
 
 struct Configuration
 {
-	unsigned int screenSizeX = 800;
-	unsigned int screenSizeY = 600;
+	unsigned int screenWidth = 800;
+	unsigned int screenHeight = 600;
 
 	sf::Color bgColor = sf::Color::Black;
 

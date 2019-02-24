@@ -16,9 +16,10 @@ private:
 class DrawingProgram
 {
 public:
+	virtual ~DrawingProgram() = default;
 	virtual void Init() = 0;
 	virtual void Draw() = 0;
-	
+	virtual void Destroy() = 0;
 	const std::string& GetProgramName();
 	const std::vector<Shader*>& GetShaders();
 

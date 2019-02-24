@@ -36,6 +36,7 @@ class HelloTriangleDrawingProgram : public DrawingProgram
 public:
 	void Init() override;
 	void Draw() override;
+	void Destroy() override;
 private:
 
 #ifndef EBO_DOUBLE_TRIANGLE
@@ -129,13 +130,24 @@ void HelloTriangleDrawingProgram::Draw()
 	glBindVertexArray(0);
 }
 
+void HelloTriangleDrawingProgram::Destroy()
+{
+	glDeleteVertexArrays(1, &VAO);
+#ifndef EBO_DOUBLE_TRIANGLE
+	glDeleteBuffers(1, &VBO);
+#else
+	glDeleteBuffers(2, &VBO[0]);
+	glDeleteBuffers(2, &EBO);
+#endif
+}
+
 int main()
 {
 	Engine engine;
 
 	auto& config = engine.GetConfiguration();
-	config.screenSizeX = 1024;
-	config.screenSizeY = 1024;
+	config.screenWidth = 1024;
+	config.screenHeight = 1024;
 	config.bgColor = sf::Color::White;
 	config.windowName = "Hello Triangle";
 

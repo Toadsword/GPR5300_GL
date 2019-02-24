@@ -11,6 +11,7 @@ class HelloTextureDrawingProgram : public DrawingProgram
 public:
 	void Init() override;
 	void Draw() override;
+	void Destroy() override;
 private:
 
 	float vertices[12] = {
@@ -102,14 +103,22 @@ void HelloTextureDrawingProgram::Draw()
 	
 }
 
+void HelloTextureDrawingProgram::Destroy()
+{
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(2, &VBO[0]);
+	glDeleteBuffers(2, &EBO);
+
+}
+
 
 int main()
 {
 	Engine engine;
 
 	auto& config = engine.GetConfiguration();
-	config.screenSizeX = 1024;
-	config.screenSizeY = 1024;
+	config.screenWidth = 1024;
+	config.screenHeight = 1024;
 	config.bgColor = sf::Color::Black;
 	config.windowName = "Hello Texture";
 
