@@ -129,7 +129,7 @@ foreach(course_file ${COURSE_FILES} )
     # I used a simple string replace, to cut off .cpp.
     file(RELATIVE_PATH course_relative_path ${SFGE_COURSE_DIR} ${course_file} )
     string( REPLACE ".cpp" "" course_name ${course_relative_path} )
-    add_executable(${course_name} ${SFGE_COURSE_DIR}/${course_relative_path} tests/hello_transform.cpp)
+    add_executable(${course_name} ${SFGE_COURSE_DIR}/${course_relative_path})
     # Make sure YourLib is linked to each app
     target_link_libraries(${course_name} PUBLIC COMMON)
 	set_property(TARGET ${course_name} PROPERTY CXX_STANDARD 17)
