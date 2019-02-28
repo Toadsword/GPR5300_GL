@@ -21,10 +21,15 @@ const float pixelPerUnit = 100.0f;
 class HelloCameraDrawingProgram : public DrawingProgram
 {
 public:
+	~HelloCameraDrawingProgram() override;
     void Init() override;
     void Draw() override;
+	void Destroy() override;
 private:
 	void ProcessInput();
+public:
+    
+private:
     Shader shaderProgram;
 	unsigned int VBO, VAO;
 	unsigned int textureWall;
@@ -113,6 +118,10 @@ private:
 #endif
 };
 
+HelloCameraDrawingProgram::~HelloCameraDrawingProgram()
+{
+}
+
 void HelloCameraDrawingProgram::Init()
 {
 	programName = "HelloCamera";
@@ -122,8 +131,8 @@ void HelloCameraDrawingProgram::Init()
 #ifdef CAMERA_CONTROLS
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
-	lastX = config.screenSizeX/2.0f;
-	lastY = config.screenSizeY/2.0f;
+	lastX = config.screenWidth/2.0f;
+	lastY = config.screenHeight/2.0f;
 #endif
 	textureWall = CreateTexture("data/sprites/wall.dds");
 	glGenVertexArrays(1, &VAO);
@@ -171,7 +180,7 @@ void HelloCameraDrawingProgram::Draw()
 		(float)config.screenSizeY / pixelPerUnit/2.0f, 
 		0.1f, 100.0f);
 #else
-	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)config.screenSizeX / config.screenSizeY, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)config.screenWidth / config.screenHeight, 0.1f, 100.0f);
 #endif
 
 	shaderProgram.Bind();
@@ -195,6 +204,12 @@ void HelloCameraDrawingProgram::Draw()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
 	glBindVertexArray(0);
+}
+
+void HelloCameraDrawingProgram::Destroy()
+{
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
 }
 
 void HelloCameraDrawingProgram::ProcessInput()
@@ -261,8 +276,8 @@ int main()
     Engine engine;
 
     auto& config = engine.GetConfiguration();
-    config.screenSizeX = 1024;
-    config.screenSizeY = 1024;
+    config.screenWidth = 1024;
+    config.screenHeight = 1024;
     config.bgColor = sf::Color::Black;
     config.windowName = "Hello Camera";
 
