@@ -6,6 +6,7 @@
 #include "SFML/Graphics/RenderTarget.hpp"
 #include <chrono>
 #include "SFML/Graphics/RenderWindow.hpp"
+#include "input.h"
 
 class DrawingProgram;
 
@@ -33,7 +34,8 @@ public:
 	float GetTimeSinceInit();
 
 	Configuration& GetConfiguration();
-	
+	InputManager& GetInputManager();
+	sf::RenderWindow* GetWindow();
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
 
 
@@ -43,7 +45,7 @@ private:
 	static Engine* enginePtr;
 	sf::RenderWindow* window = nullptr;
 	std::vector<DrawingProgram*> drawingPrograms;
-	
+	InputManager inputManager;
 	Configuration configuration;
 	sf::Clock deltaClock;
 	sf::Clock engineClock;

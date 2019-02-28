@@ -29,7 +29,7 @@ endif()
 
 
 #SFML
-set(SFML_DIR ${EXTERNAL_DIR}/SFML)
+set(SFML_DIR "${EXTERNAL_DIR}/SFML")
 set(SFML_BUILD_EXAMPLES FALSE)
 set(BUILD_SHARED_LIBS FALSE)
 set(SFML_STATIC_LIBRARIES TRUE)
@@ -49,13 +49,13 @@ LIST(APPEND SFGE_LIBRARIES
 #gli
 set(GLI_DIR ${EXTERNAL_DIR}/gli)
 IF(NOT EXISTS ${GLI_DIR})
-message("Please do git submodule update --init --recursive")
+message(FATAL_ERROR "Please do git submodule update --init --recursive")
 ENDIF()
 include_directories(${GLI_DIR})
 #glm
 set(GLM_DIR ${EXTERNAL_DIR}/glm)
 IF(NOT EXISTS ${GLM_DIR})
-message("Please do git submodule update --init --recursive")
+message(FATAL_ERROR "Please do git submodule update --init --recursive")
 ENDIF()
 include_directories(${GLM_DIR})
 #SFML Imgui

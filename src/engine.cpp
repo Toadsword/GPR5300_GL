@@ -87,6 +87,14 @@ void Engine::GameLoop()
 					debugInfo = !debugInfo;
 				}
 			}
+			if(event.type == sf::Event::MouseWheelScrolled)
+			{
+				inputManager.wheelDelta = event.mouseWheelScroll.delta;
+			}
+			else
+			{
+				inputManager.wheelDelta = 0.0f;
+			}
 		}
 
 		ImGui::SFML::Update(*window, dt);
@@ -105,7 +113,7 @@ void Engine::GameLoop()
 
 		//switch framebuffer
 		window->display();
-
+		inputManager.Update();
 	}
 	delete window;
 
@@ -221,5 +229,15 @@ void Engine::SwitchWireframeMode()
 Configuration &Engine::GetConfiguration()
 {
 	return configuration;
+}
+
+InputManager& Engine::GetInputManager()
+{
+	return inputManager;
+}
+
+sf::RenderWindow* Engine::GetWindow()
+{
+	return window;
 }
 
