@@ -9,7 +9,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-//#define CUBE_SAMPLE
+#define CUBE_SAMPLE
 
 class HelloCoordsDrawingProgram : public DrawingProgram
 {
