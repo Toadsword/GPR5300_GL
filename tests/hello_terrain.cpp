@@ -1,7 +1,7 @@
 #include <engine.h>
 #include <graphics.h>
 
-#ifdef NDEBUG
+#ifdef _DEBUG
 #include <iostream>
 #endif
 #include <GL/glew.h>
@@ -12,6 +12,7 @@
 #include <gli/gli.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "SFML/Graphics/Texture.hpp"
 
 class HelloTerrainDrawingProgram : public DrawingProgram
 {
@@ -29,17 +30,19 @@ private:
 
 
 	unsigned terrainTexture;
+	sf::Texture sfTerrainTexture;
 	unsigned terrainHeightMap;
+	sf::Texture sfTerrainHeightMap;
 
 	float* vertices = nullptr;
 	float* texCoords = nullptr;
 	unsigned int* indices = nullptr;
 
 	float terrainOriginY = -1.0f;
-	float terrainElevationFactor = 1.0f;
+	float terrainElevationFactor = 5.0f;
 
-	const size_t terrainWidth = 1024l;
-	const size_t terrainHeight = 1024l;
+	const size_t terrainWidth = 2048l;
+	const size_t terrainHeight = 2048l;
 	const float terrainResolution = 0.01f;
 
 	const size_t verticesCount = terrainWidth * terrainHeight;
@@ -66,8 +69,8 @@ void HelloTerrainDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	vertices = static_cast<float*>(calloc(3*verticesCount, sizeof(float)));//vec3
-	texCoords = static_cast<float*>(calloc(2*verticesCount, sizeof(float)));//vec2
+	vertices = (float*)calloc(3*verticesCount, sizeof(float));//vec3, so 3 floats
+	texCoords = (float*)calloc(2*verticesCount, sizeof(float));//vec2, so 2 floats
 
 	for (size_t i = 0l; i < verticesCount; i++)
 	{
@@ -76,7 +79,7 @@ void HelloTerrainDrawingProgram::Init()
 		vertices[3 * i + 1] = 0.0f;//y
 		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
 
-#ifdef NDEBUG
+#ifdef _DEBUG
         std::cout << "Vertex: " << i << " x: "<<vertices[3 * i]<<" y:"<< vertices[3 * i + 2] <<"\n";
 #endif
     }
@@ -84,9 +87,9 @@ void HelloTerrainDrawingProgram::Init()
 	{
 	    const float width = terrainWidth;
 	    const float height = terrainHeight;
-		texCoords[2 * i] = (float)(i % terrainWidth) / width;
-        texCoords[2 * i + 1]  = static_cast<float>(i / terrainWidth) / height;
-#ifdef NDEBUG
+		texCoords[2 * i] = (float)((i % terrainWidth)+1) / (width+1);
+        texCoords[2 * i + 1]  = (float)((i / terrainWidth)+1) / (height+1);
+#ifdef _DEBUG
         std::cout << "TexCoords: " << i << " x: "<<texCoords[2 * i] <<" y:"<< texCoords[2 * i + 1] <<"\n";
 #endif
 	}
@@ -102,14 +105,14 @@ void HelloTerrainDrawingProgram::Init()
 	        indices[6*quad] = origin;
 	        indices[6*quad+1] = origin+1;
 	        indices[6*quad+2] = originBottom;
-#ifdef NDEBUG
+#ifdef _DEBUG
             std::cout << "Indices "<<6*quad<<" 1: "<<indices[6*quad] <<" 2: "<< indices[6*quad+1]  <<" 3: " <<indices[6*quad+2]<<"\n";
 #endif
 	        //face2
             indices[6*quad+3] = origin+1;
             indices[6*quad+4] = originBottom+1;
             indices[6*quad+5] = originBottom;
-#ifdef NDEBUG
+#ifdef _DEBUG
             std::cout << "Indices "<<6*quad+3<<" 1: "<<indices[6*quad+3]<<" 2: "<< indices[6*quad+4]  <<" 3: " <<indices[6*quad+5]<<"\n";
 #endif
             quad++;
@@ -118,10 +121,15 @@ void HelloTerrainDrawingProgram::Init()
 
 	shaderProgram.Init("shaders/terrain/terrain_vertex.glsl", "shaders/terrain/terrain_fragment.glsl");
 	shaders.push_back(&shaderProgram);
+	
+	sfTerrainHeightMap.loadFromFile("data/terrain/terrain_height2048.png");
+	terrainHeightMap = sfTerrainHeightMap.getNativeHandle();
 
-	terrainHeightMap = CreateTexture("data/terrain/terrain_height.dds");
-	terrainTexture = CreateTexture("data/terrain/terrain_texture.dds");
+	sfTerrainTexture.loadFromFile("data/terrain/terrain_texture2048.png");
+	terrainTexture = sfTerrainTexture.getNativeHandle();
+	//terrainHeightMap = CreateTexture("data/terrain/terrain_height2048.dds");
 
+	//terrainTexture = CreateTexture("data/terrain/terrain_texture2048.dds");
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
 
@@ -152,7 +160,9 @@ void HelloTerrainDrawingProgram::Draw()
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 	glEnable(GL_DEPTH_TEST);
-
+	glFrontFace(GL_CW);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glm::mat4 view = glm::mat4(1.0f);
 	
 	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
