@@ -1,8 +1,13 @@
 #include <engine.h>
 #include <graphics.h>
 
+#ifdef NDEBUG
+#include <iostream>
+#endif
 #include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
+
+#include <imgui.h>
 
 #include <gli/gli.hpp>
 #include <glm/glm.hpp>
@@ -15,6 +20,7 @@ public:
 	void Draw() override;
 	void ProcessInput();
 	void Destroy() override;
+	void UpdateUi() override;
 private:
 	Shader shaderProgram;
 	unsigned VBO[2];
@@ -27,16 +33,19 @@ private:
 
 	float* vertices = nullptr;
 	float* texCoords = nullptr;
-	int* indices = nullptr;
+	unsigned int* indices = nullptr;
 
-	const size_t terrainWidth = 512l;
-	const size_t terrainHeight = 512l;
-	const float terrainResolution = 1.0f;
+	float terrainOriginY = -1.0f;
+	float terrainElevationFactor = 1.0f;
+
+	const size_t terrainWidth = 1024l;
+	const size_t terrainHeight = 1024l;
+	const float terrainResolution = 0.01f;
 
 	const size_t verticesCount = terrainWidth * terrainHeight;
-	const size_t faceCount = 2 * (terrainWidth - 1)*(terrainHeight - 1);
+	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
 
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+	glm::vec3 cameraPos = glm::vec3(0.0f, 3.0f, 3.0f);
 	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
@@ -44,8 +53,8 @@ private:
 	float pitch = 0.0f;
 	float fov = 45.0f;
 	float fovScroolSpeed = 100.0f;
-	float lastX = 800.0f / 2.0;
-	float lastY = 600.0 / 2.0;
+	float lastX = 800.0f / 2.0f;
+	float lastY = 600.0 / 2.0f;
 };
 
 void HelloTerrainDrawingProgram::Init()
@@ -57,31 +66,55 @@ void HelloTerrainDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	vertices = static_cast<float*>(calloc(3*verticesCount, sizeof(float)));
-	texCoords = static_cast<float*>(calloc(2*verticesCount, sizeof(float)));
+	vertices = static_cast<float*>(calloc(3*verticesCount, sizeof(float)));//vec3
+	texCoords = static_cast<float*>(calloc(2*verticesCount, sizeof(float)));//vec2
 
 	for (size_t i = 0l; i < verticesCount; i++)
 	{
-		vertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (i%terrainWidth) * terrainResolution;
-		vertices[3 * i + 1] = 0.0f;
-		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (i / terrainWidth) * terrainResolution;
-	}
+
+		vertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (float)(i % terrainWidth) * terrainResolution;//x
+		vertices[3 * i + 1] = 0.0f;//y
+		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
+
+#ifdef NDEBUG
+        std::cout << "Vertex: " << i << " x: "<<vertices[3 * i]<<" y:"<< vertices[3 * i + 2] <<"\n";
+#endif
+    }
 	for (size_t i = 0l; i < verticesCount; i++)
 	{
-		texCoords[2 * i] = (float)(i%terrainWidth) / (float)terrainWidth;
-		texCoords[2 * i + 1] = static_cast<float>(i / terrainWidth) / (float)terrainHeight;
+	    const float width = terrainWidth;
+	    const float height = terrainHeight;
+		texCoords[2 * i] = (float)(i % terrainWidth) / width;
+        texCoords[2 * i + 1]  = static_cast<float>(i / terrainWidth) / height;
+#ifdef NDEBUG
+        std::cout << "TexCoords: " << i << " x: "<<texCoords[2 * i] <<" y:"<< texCoords[2 * i + 1] <<"\n";
+#endif
 	}
-	indices = static_cast<int*>(calloc(3 * faceCount, sizeof(int)));
-	for (size_t i = 0l; i < faceCount/2; i++)
-	{
-		indices[6 * i] = i;
-		indices[6 * i + 1] = i+1;
-		indices[6 * i + 2] = terrainWidth + i;
-
-		indices[6 * i + 3] = i + 1;
-		indices[6 * i + 4] = terrainWidth + i + 1;
-		indices[6 * i + 5] = terrainWidth + i;
-	}
+	indices = (unsigned *)calloc(3l * faceCount, sizeof(unsigned));
+	size_t quad = 0;
+	for(size_t y = 0; y < terrainHeight-1;y++)
+    {
+	    for(size_t x = 0; x < terrainWidth-1;x++)
+        {
+	        const unsigned origin = x + y*terrainWidth;
+	        const unsigned originBottom = origin+terrainWidth;
+	        //face1
+	        indices[6*quad] = origin;
+	        indices[6*quad+1] = origin+1;
+	        indices[6*quad+2] = originBottom;
+#ifdef NDEBUG
+            std::cout << "Indices "<<6*quad<<" 1: "<<indices[6*quad] <<" 2: "<< indices[6*quad+1]  <<" 3: " <<indices[6*quad+2]<<"\n";
+#endif
+	        //face2
+            indices[6*quad+3] = origin+1;
+            indices[6*quad+4] = originBottom+1;
+            indices[6*quad+5] = originBottom;
+#ifdef NDEBUG
+            std::cout << "Indices "<<6*quad+3<<" 1: "<<indices[6*quad+3]<<" 2: "<< indices[6*quad+4]  <<" 3: " <<indices[6*quad+5]<<"\n";
+#endif
+            quad++;
+        }
+    }
 
 	shaderProgram.Init("shaders/terrain/terrain_vertex.glsl", "shaders/terrain/terrain_fragment.glsl");
 	shaders.push_back(&shaderProgram);
@@ -97,17 +130,17 @@ void HelloTerrainDrawingProgram::Init()
 	glBindVertexArray(VAO);//Now use our VAO
 	//bind vertices data
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, verticesCount * 3, vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * 3* sizeof(float), vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	//bind texture coords data
 	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, verticesCount * 2, texCoords, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * 2 * sizeof(float), texCoords, GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
 	//bind vertices index
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceCount * 3, indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceCount * 3 * sizeof(unsigned), indices, GL_STATIC_DRAW);
 	//unbind Vertex Array
 	glBindVertexArray(0);
 }
@@ -125,6 +158,7 @@ void HelloTerrainDrawingProgram::Draw()
 	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 	
 	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f,0.0f,1.0f));
 	
 	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)config.screenWidth / config.screenHeight, 0.1f, 1000.0f);
 
@@ -138,9 +172,10 @@ void HelloTerrainDrawingProgram::Draw()
 	const int modelLoc = glGetUniformLocation(shaderProgram.GetProgram(), "model");
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-	const int heightConstLoc = glGetUniformLocation(shaderProgram.GetProgram(), "heightResolution");
-	glUniform1f(heightConstLoc, 30.0f);
-
+	const int heightFactorConstLoc = glGetUniformLocation(shaderProgram.GetProgram(), "heightResolution");
+	glUniform1f(heightFactorConstLoc, terrainElevationFactor);
+    const int heightConstLoc = glGetUniformLocation(shaderProgram.GetProgram(), "heightOrigin");
+    glUniform1f(heightConstLoc, terrainOriginY);
 	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture1"), 0);
 	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture2"), 1);
 	glActiveTexture(GL_TEXTURE0);
@@ -150,6 +185,7 @@ void HelloTerrainDrawingProgram::Draw()
 
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, faceCount * 3, GL_UNSIGNED_INT, 0);
+
 	glBindVertexArray(0);
 }
 
@@ -222,6 +258,13 @@ void HelloTerrainDrawingProgram::Destroy()
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(2, &VBO[0]);
 	glDeleteBuffers(1, &EBO);
+}
+
+void HelloTerrainDrawingProgram::UpdateUi() {
+	DrawingProgram::UpdateUi();
+	ImGui::Separator();
+	ImGui::SliderFloat("Terrain Height Mult", &terrainElevationFactor, -10.0f, 10.0f, "height = %.3f");
+    ImGui::SliderFloat("Terrain Height Origin", &terrainOriginY, -10.0f, 10.0f, "height = %.3f");
 }
 
 int main()

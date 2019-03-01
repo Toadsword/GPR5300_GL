@@ -20,6 +20,7 @@ public:
 	virtual void Init() = 0;
 	virtual void Draw() = 0;
 	virtual void Destroy() = 0;
+	virtual void UpdateUi() {};
 	const std::string& GetProgramName();
 	const std::vector<Shader*>& GetShaders();
 

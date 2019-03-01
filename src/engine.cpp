@@ -192,6 +192,7 @@ void Engine::UpdateUi()
 					ImGui::Text("Uniform #%d Type: %u Name: %s", j, type, name);
 				}
 			}
+			drawingProgram->UpdateUi();
 
 		}
 		ImGui::End();
