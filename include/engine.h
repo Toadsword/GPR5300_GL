@@ -55,5 +55,8 @@ private:
 	bool debugInfo = true;
 	bool drawingProgramsHierarchy = true;
 	bool inspector = true;
+	bool enableImGui = false;
+
+	const sf::Keyboard::Key imguiKey = static_cast<sf::Keyboard::Key>(52);
 };
 

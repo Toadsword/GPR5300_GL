@@ -94,16 +94,14 @@ LIST(APPEND SFGE_LIBRARIES Remotery)
 #COMMON
 
 #shaders
-file(GLOB_RECURSE SHADERS_SRC shaders/*.glsl)
-source_group("Shaders" FILES ${SHADERS_SRC})
-LIST(APPEND SFGE_LIBRARIES)
+
 if(UNIX AND NOT APPLE)
 	LIST(APPEND SFGE_LIBRARIES
 		stdc++fs)
 ENDIF()
 
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
-add_library(COMMON ${SRC} ${SHADERS_SRC})
+add_library(COMMON ${SRC})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})
 set_property(TARGET COMMON PROPERTY CXX_STANDARD 17)
 
@@ -129,7 +127,10 @@ foreach(course_file ${COURSE_FILES} )
     # I used a simple string replace, to cut off .cpp.
     file(RELATIVE_PATH course_relative_path ${SFGE_COURSE_DIR} ${course_file} )
     string( REPLACE ".cpp" "" course_name ${course_relative_path} )
-    add_executable(${course_name} ${SFGE_COURSE_DIR}/${course_relative_path})
+	file(GLOB_RECURSE SHADERS_SRC shaders/${course_name}/*.glsl)
+	source_group("Shaders" FILES ${SHADERS_SRC})
+
+    add_executable(${course_name} ${SFGE_COURSE_DIR}/${course_relative_path} ${SHADERS_SRC})
     # Make sure YourLib is linked to each app
     target_link_libraries(${course_name} PUBLIC COMMON)
 	set_property(TARGET ${course_name} PROPERTY CXX_STANDARD 17)

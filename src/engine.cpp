@@ -78,6 +78,7 @@ void Engine::GameLoop()
 			}
 			else if(event.type == sf::Event::KeyPressed)
 			{
+				std::cout << "Key Pressed: " << event.key.code << "\n";
 				if(event.key.code == sf::Keyboard::Key::Num1)
 				{
 					SwitchWireframeMode();
@@ -86,6 +87,11 @@ void Engine::GameLoop()
 				{
 					debugInfo = !debugInfo;
 				}
+				if(event.key.code == imguiKey)
+				{
+					enableImGui = !enableImGui;
+				}
+
 			}
 			if(event.type == sf::Event::MouseWheelScrolled)
 			{
@@ -96,10 +102,11 @@ void Engine::GameLoop()
 				inputManager.wheelDelta = 0.0f;
 			}
 		}
-
-		ImGui::SFML::Update(*window, dt);
-		UpdateUi();
-		// effacement les tampons de couleur/profondeur
+		if (enableImGui)
+		{
+			ImGui::SFML::Update(*window, dt);
+			UpdateUi();
+		}
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		for (auto drawingProgram : drawingPrograms)
@@ -108,7 +115,8 @@ void Engine::GameLoop()
 		}
 
 		//window->pushGLStates();
-		ImGui::SFML::Render(*window);
+		if(enableImGui)
+			ImGui::SFML::Render(*window);
 		//window->popGLStates();
 
 		//switch framebuffer

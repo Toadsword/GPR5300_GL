@@ -24,14 +24,14 @@ public:
 	void UpdateUi() override;
 private:
 	Shader shaderProgram;
-	unsigned VBO[2];
-	unsigned int VAO;
-	unsigned int EBO;
+	unsigned VBO[2] = {};
+	unsigned int VAO = 0;
+	unsigned int EBO = 0;
 
 
-	unsigned terrainTexture;
+	unsigned terrainTexture = 0;
 	sf::Texture sfTerrainTexture;
-	unsigned terrainHeightMap;
+	unsigned terrainHeightMap = 0;
 	sf::Texture sfTerrainHeightMap;
 
 	float* vertices = nullptr;
@@ -41,9 +41,9 @@ private:
 	float terrainOriginY = -1.0f;
 	float terrainElevationFactor = 5.0f;
 
-	const size_t terrainWidth = 2048l;
-	const size_t terrainHeight = 2048l;
-	const float terrainResolution = 0.01f;
+	const size_t terrainWidth = 256l;
+	const size_t terrainHeight = 256l;
+	const float terrainResolution = 0.04f;
 
 	const size_t verticesCount = terrainWidth * terrainHeight;
 	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
@@ -119,13 +119,15 @@ void HelloTerrainDrawingProgram::Init()
         }
     }
 
-	shaderProgram.Init("shaders/terrain/terrain_vertex.glsl", "shaders/terrain/terrain_fragment.glsl");
+	shaderProgram.Init("shaders/hello_terrain/terrain_vertex.glsl", "shaders/hello_terrain/terrain_fragment.glsl");
 	shaders.push_back(&shaderProgram);
 	
 	sfTerrainHeightMap.loadFromFile("data/terrain/terrain_height2048.png");
+	sfTerrainHeightMap.setSmooth(true);
 	terrainHeightMap = sfTerrainHeightMap.getNativeHandle();
 
 	sfTerrainTexture.loadFromFile("data/terrain/terrain_texture2048.png");
+	sfTerrainTexture.setSmooth(true);
 	terrainTexture = sfTerrainTexture.getNativeHandle();
 	//terrainHeightMap = CreateTexture("data/terrain/terrain_height2048.dds");
 
