@@ -25,8 +25,6 @@ SOFTWARE.
 #include <iostream>
 #include <cmath>
 #include <engine.h>
-#include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
 #include <graphics.h>
 
 #define EBO_DOUBLE_TRIANGLE
@@ -88,7 +86,7 @@ void HelloTriangleDrawingProgram::Init()
 	glGenBuffers(1, &EBO);
 #endif
 	
-	shaderProgram.Init("shaders/hello_triangle/vertex_shader.glsl", "shaders/hello_triangle/fragment_shader.glsl");
+	shaderProgram.Init("shaders/hello_triangle/triangle.vert", "shaders/hello_triangle/triangle.frag");
 
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object
@@ -141,14 +139,14 @@ void HelloTriangleDrawingProgram::Destroy()
 #endif
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	Engine engine;
 
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.bgColor = sf::Color::White;
+	config.bgColor = { 255,255,255,255 };
 	config.windowName = "Hello Triangle";
 
 	engine.AddDrawingProgram(new HelloTriangleDrawingProgram());

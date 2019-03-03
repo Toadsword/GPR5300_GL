@@ -1,9 +1,19 @@
 #include <graphics.h>
 
 #include <iostream>
-
+#ifndef USE_EMSCRIPTEN
 #include <GL/glew.h>
+#else
+#include <GLES2/gl2.h>
+#include "emscripten.h"
+#endif
+#ifdef USE_SFML2
 #include <SFML/OpenGL.hpp>
+#endif
+#ifdef USE_SDL2
+#include <SDL_opengl.h>
+#endif
+
 #include <gli/gli.hpp>
 #include <glm/glm.hpp>
 #include "file_utility.h"
@@ -69,6 +79,7 @@ int Shader::GetProgram()
 
 unsigned CreateTexture(char const* filename)
 {
+#ifndef USE_EMSCRIPTEN
 	gli::texture Texture = gli::load(filename);
 	if (Texture.empty())
 		return 0;
@@ -184,6 +195,8 @@ unsigned CreateTexture(char const* filename)
 				}
 			}
 	return TextureName;
+#endif
+	return 0;
 }
 
 const std::string& DrawingProgram::GetProgramName()
