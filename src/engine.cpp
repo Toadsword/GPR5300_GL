@@ -76,6 +76,9 @@ void Engine::Init()
 	// Turn on double buffering with a 24bit Z buffer.
 	// You may need to change this to 16 or 32 for your system
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+	Engine* engine = Engine::GetPtr();
+	engineStartTime = engine->timer.now();
 #endif
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -171,7 +174,8 @@ void Engine::GameLoop()
 void Engine::Loop()
 {
 	Engine* engine = Engine::GetPtr();
-	auto currentFrame = engine->timer.now();
+    auto currentFrame = engine->timer.now();
+    engine->previousFrameTime = engine->engineStartTime;
 	engine->dt = std::chrono::duration_cast<ms>(currentFrame - engine->previousFrameTime).count() / 1000.f;
 
 	SDL_Event event;

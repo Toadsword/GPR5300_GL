@@ -91,8 +91,8 @@ private:
 	SDL_GLContext glContext;
 	std::chrono::high_resolution_clock timer;
 
-	std::chrono::time_point<std::chrono::steady_clock> engineStartTime;
-	std::chrono::time_point<std::chrono::steady_clock> previousFrameTime;
+	std::chrono::high_resolution_clock::time_point engineStartTime;
+	std::chrono::high_resolution_clock::time_point previousFrameTime;
 	float dt;
 #endif
 	std::vector<DrawingProgram*> drawingPrograms;
