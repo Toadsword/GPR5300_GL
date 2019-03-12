@@ -14,6 +14,8 @@
 #endif
 #include <chrono>
 #include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
 
 Engine* Engine::enginePtr = nullptr;
 
@@ -76,16 +78,30 @@ void Engine::Init()
 	// You may need to change this to 16 or 32 for your system
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	glContext = SDL_GL_CreateContext(window);
-
-
-	Engine* engine = Engine::GetPtr();
-	engineStartTime = engine->timer.now();
-#endif
+	
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
-		std::cerr << "Error: " << glewGetErrorString(err) << "\n";
+		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
 	}
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+
+	// Setup Dear ImGui style
+	//ImGui::StyleColorsDark();
+	ImGui::StyleColorsClassic();
+
+	// Setup Platform/Renderer bindings
+	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+	ImGui_ImplOpenGL3_Init("#version 330 core");
+
+	engineStartTime = timer.now();
+	previousFrameTime = engineStartTime;
+#endif
+	
 	for (auto drawingProgram : drawingPrograms)
 	{
 		drawingProgram->Init();
@@ -174,17 +190,20 @@ void Engine::GameLoop()
 
 void Engine::Loop()
 {
-	Engine* engine = Engine::GetPtr();
-    auto currentFrame = engine->timer.now();
-    engine->previousFrameTime = engine->engineStartTime;
-	engine->dt = std::chrono::duration_cast<ms>(currentFrame - engine->previousFrameTime).count() / 1000.f;
+	std::chrono::high_resolution_clock::time_point currentFrame = timer.now();
 
+	dt = std::chrono::duration_cast<ms>(currentFrame - previousFrameTime).count() / 1000.0f;
+	previousFrameTime = currentFrame;
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
+		if (enableImGui)
+		{
+			ImGui_ImplSDL2_ProcessEvent(&event);
+		}
 		if (event.type == SDL_QUIT)
 		{
-			engine->running = false;
+			running = false;
 		}
 		if (event.type == SDL_WINDOWEVENT) {
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -193,19 +212,32 @@ void Engine::Loop()
 				Vec2f newWindowSize = Vec2f(event.window.data1, event.window.data2);
 				std::cout << "New Window Size: " << newWindowSize << "\n";
 				glViewport(0, 0, newWindowSize.x, newWindowSize.y);
-				engine->configuration.screenWidth = event.window.data1;
-				engine->configuration.screenHeight = event.window.data2;
+				configuration.screenWidth = event.window.data1;
+				configuration.screenHeight = event.window.data2;
 			}
 		}
 	}
+	if (enableImGui)
+	{
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(window);
+		ImGui::NewFrame();
 
-
+		UpdateUi();
+	}
+	ImGui::Render();
+	SDL_GL_MakeCurrent(window, glContext);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	for (auto drawingProgram : engine->drawingPrograms)
+	for (auto drawingProgram : drawingPrograms)
 	{
 		drawingProgram->Draw();
 	}
-	SDL_GL_SwapWindow(engine->window);
+	if (enableImGui)
+	{
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+	SDL_GL_SwapWindow(window);
 }
 
 
@@ -224,6 +256,10 @@ void Engine::GameLoop()
 		Loop();
 	}
 #endif
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
 	// Delete our OpengL context
 	SDL_GL_DeleteContext(glContext);
 
@@ -236,10 +272,11 @@ void Engine::GameLoop()
 #endif
 void Engine::UpdateUi()
 {
-#ifdef USE_SFML2
-	const auto windowSize = window->getSize();
+	auto& config = GetConfiguration();
+	const auto windowSize = Vec2f(config.screenWidth, config.screenHeight);
 	if (debugInfo)
 	{
+#ifdef USE_SFML2
 		const auto settings = window->getSettings();
 
 		ImGui::SetNextWindowPos(ImVec2(150, 0), ImGuiCond_Always);
@@ -250,12 +287,24 @@ void Engine::UpdateUi()
 		ImGui::Text("Stencil bits: %d", settings.stencilBits);
 		ImGui::Text("FPS: %4.0f", 1.0f / GetDeltaTime());
 		ImGui::End();
+#endif
+#ifdef USE_SDL2
+
+		int majorVersion = 0, minorVersion = 0;
+		SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &majorVersion);
+		SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minorVersion);
+		ImGui::SetNextWindowPos(ImVec2(150, 0), ImGuiCond_Always);
+		ImGui::Begin("Debug Info");
+		ImGui::Text("OpenGL version: %d.%d", majorVersion, minorVersion);
+		ImGui::Text("FPS: %4.0f", 1.0f / GetDeltaTime());
+		ImGui::End();
+#endif
 	}
 
 	if(drawingProgramsHierarchy)
 	{
 		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(150.0f, window->getSize().y), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(150.0f, config.screenHeight), ImGuiCond_Always);
 		ImGui::Begin("Hierarchy");
 		for (int i = 0; i < drawingPrograms.size();i++)
 		{
@@ -271,7 +320,7 @@ void Engine::UpdateUi()
 	if(inspector)
 	{
 		ImGui::SetNextWindowPos(ImVec2(windowSize.x - 250.0f, 0), ImGuiCond_FirstUseEver);
-		//ImGui::SetNextWindowSize(ImVec2(250.0f, window->getSize().y), ImGuiCond_Always);
+		ImGui::SetNextWindowSize(ImVec2(250.0f, config.screenHeight), ImGuiCond_Always);
 		ImGui::Begin("Inspector");
 		if(selectedDrawingProgram != -1)
 		{
@@ -313,7 +362,6 @@ void Engine::UpdateUi()
 		}
 		ImGui::End();
 	}
-#endif
 }
 
 float Engine::GetDeltaTime()
@@ -363,6 +411,7 @@ InputManager& Engine::GetInputManager()
 {
 	return inputManager;
 }
+
 #ifdef USE_SFML2
 sf::RenderWindow* Engine::GetWindow()
 {

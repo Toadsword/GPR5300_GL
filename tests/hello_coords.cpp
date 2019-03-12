@@ -1,9 +1,5 @@
 #include <engine.h>
 #include <graphics.h>
-
-#include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
-
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -111,8 +107,8 @@ void HelloCoordsDrawingProgram::Init()
 
 	shaders.push_back(&shaderProgram);
 	shaderProgram.Init(
-		"shaders/hello_coords/coords_vertex.glsl",
-		"shaders/hello_coords/coords_fragment.glsl");
+		"shaders/hello_coords/coords.vert",
+		"shaders/hello_coords/coords.frag");
 	textureWall = CreateTexture("data/sprites/wall.dds");
 
 #ifdef CUBE_SAMPLE
@@ -215,14 +211,16 @@ void HelloCoordsDrawingProgram::Destroy()
 #endif
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	Engine engine;
 
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
+#ifdef USE_SFML2
 	config.bgColor = sf::Color::Black;
+#endif
 	config.windowName = "Hello Coords";
 
 	engine.AddDrawingProgram(new HelloCoordsDrawingProgram());

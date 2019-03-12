@@ -86,7 +86,7 @@ private:
 
 #ifdef USE_SDL2
 
-	static void Loop();
+	void Loop();
 	SDL_Window* window = nullptr;
 	SDL_GLContext glContext;
 	std::chrono::high_resolution_clock timer;
@@ -104,7 +104,7 @@ private:
 	bool debugInfo = true;
 	bool drawingProgramsHierarchy = true;
 	bool inspector = true;
-	bool enableImGui = false;
+	bool enableImGui = true;
 	bool running = false;
 };
 

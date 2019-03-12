@@ -1,9 +1,6 @@
 #include <engine.h>
 #include <graphics.h>
 
-#include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -108,14 +105,14 @@ void HelloTransformDrawingProgram::Destroy()
 	glDeleteBuffers(2, &EBO);
 }
 
-int main()
+int main(int argc, char** argv)
 {
     Engine engine;
 
     auto& config = engine.GetConfiguration();
     config.screenWidth = 1024;
     config.screenHeight = 1024;
-    config.bgColor = sf::Color::Black;
+    //config.bgColor = sf::Color::Black;
     config.windowName = "Hello Transform";
 
     engine.AddDrawingProgram(new HelloTransformDrawingProgram());

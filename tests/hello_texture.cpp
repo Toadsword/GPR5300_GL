@@ -1,10 +1,13 @@
 #include <engine.h>
 #include <graphics.h>
 #include <GL/glew.h>
+
+#ifdef USE_SFML2
 #include <SFML/OpenGL.hpp>
 #include <SFML/Graphics/Texture.hpp>
+#endif
 
-#define OTHER_TEXTURE
+//#define OTHER_TEXTURE
 
 class HelloTextureDrawingProgram : public DrawingProgram
 {
@@ -54,11 +57,11 @@ void HelloTextureDrawingProgram::Init()
 	glGenBuffers(1, &EBO);
 
 	shaderProgram.Init(
-		"shaders/hello_texture/texture_vertex.glsl",
+		"shaders/hello_texture/texture.vert",
 #ifdef OTHER_TEXTURE
 		"shaders/hello_texture/texture_other_fragment.glsl"
 #else
-		"shaders/hello_texture/texture_fragment.glsl""
+		"shaders/hello_texture/texture.frag"
 #endif
 	);
 	textureWall = CreateTexture("data/sprites/wall.dds");
@@ -112,14 +115,14 @@ void HelloTextureDrawingProgram::Destroy()
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
 	Engine engine;
 
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.bgColor = sf::Color::Black;
+	//config.bgColor = sf::Color::Black;
 	config.windowName = "Hello Texture";
 
 	engine.AddDrawingProgram(new HelloTextureDrawingProgram());
