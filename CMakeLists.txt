@@ -84,6 +84,7 @@ if(USE_SDL2)
 				SDL2main)
 		endif(MSVC)
 		#opengl
+		set(OpenGL_GL_PREFERENCE GLVND)
 		find_package(OpenGL REQUIRED)
 		include_directories(${OPENGL_INCLUDE_DIR})
 		LIST(APPEND SFGE_LIBRARIES
