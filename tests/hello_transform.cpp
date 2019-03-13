@@ -50,8 +50,8 @@ void HelloTransformDrawingProgram::Init()
     glGenBuffers(1, &EBO);
 
     shaderProgram.Init(
-            "shaders/hello_transform/vertex.glsl",
-            "shaders/hello_transform/fragment.glsl"
+            "shaders/hello_transform/transform.vert",
+            "shaders/hello_transform/transform.frag"
     );
 
     textureWall = CreateTexture("data/sprites/wall.dds");

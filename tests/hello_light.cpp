@@ -88,11 +88,11 @@ void HelloLightDrawingProgram::Init()
 	lastY = config.screenHeight / 2.0f;
 
 	objShaderProgram.Init(
-		"shaders/hello_light/light_vertex.glsl",
-		"shaders/hello_light/light_fragment.glsl");
+		"shaders/hello_light/light.vert",
+		"shaders/hello_light/light.frag");
 	lampShaderProgram.Init(
-		"shaders/hello_light/lamp_vertex.glsl",
-		"shaders/hello_light/lamp_fragment.glsl");
+		"shaders/hello_light/lamp.vert",
+		"shaders/hello_light/lamp.frag");
 	shaders.push_back(&objShaderProgram);
 	shaders.push_back(&lampShaderProgram);
 
@@ -182,6 +182,7 @@ void HelloLightDrawingProgram::ProcessInput()
 	auto& inputManager = engine->GetInputManager();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
+#ifdef USE_SFML2
 	if (inputManager.GetButton(sf::Keyboard::W))
 	{
 		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
@@ -198,7 +199,26 @@ void HelloLightDrawingProgram::ProcessInput()
 	{
 		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
 	}
+#endif
 
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
 
 	auto mousePos = inputManager.GetMousePosition();
 
@@ -215,13 +235,12 @@ void HelloLightDrawingProgram::ProcessInput()
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
 	Engine engine;
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.bgColor = sf::Color::Black;
 	config.windowName = "Hello Light";
 	engine.AddDrawingProgram(new HelloLightDrawingProgram());
 

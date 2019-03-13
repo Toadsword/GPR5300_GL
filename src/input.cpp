@@ -51,7 +51,16 @@ bool InputManager::GetButtonUp(SDL_Keycode key)
 }
 bool InputManager::GetButton(SDL_Keycode key)
 {
-	return false;
+	const auto scanCode = SDL_GetScancodeFromKey(key);
+	const auto* keyState = SDL_GetKeyboardState(NULL);
+	return keyState[scanCode];
+}
+
+Vec2f InputManager::GetMousePosition()
+{
+	int x, y;
+	SDL_GetMouseState(&x, &y);
+	return Vec2f(x, y);
 }
 #endif
 float InputManager::GetMouseWheelDelta()

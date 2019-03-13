@@ -4,16 +4,15 @@
 #ifdef _DEBUG
 #include <iostream>
 #endif
-#include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
 
 #include <imgui.h>
 
 #include <gli/gli.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#ifdef USE_SFML2
 #include "SFML/Graphics/Texture.hpp"
-
+#endif
 class HelloTerrainDrawingProgram : public DrawingProgram
 {
 public:
@@ -30,10 +29,11 @@ private:
 
 
 	unsigned terrainTexture = 0;
-	sf::Texture sfTerrainTexture;
 	unsigned terrainHeightMap = 0;
+#ifdef USE_SFML2
+	sf::Texture sfTerrainTexture;
 	sf::Texture sfTerrainHeightMap;
-
+#endif
 	float* vertices = nullptr;
 	float* texCoords = nullptr;
 	unsigned int* indices = nullptr;
@@ -119,9 +119,9 @@ void HelloTerrainDrawingProgram::Init()
         }
     }
 
-	shaderProgram.Init("shaders/hello_terrain/terrain_vertex.glsl", "shaders/hello_terrain/terrain_fragment.glsl");
+	shaderProgram.Init("shaders/hello_terrain/terrain.vert", "shaders/hello_terrain/terrain.frag");
 	shaders.push_back(&shaderProgram);
-	
+#ifdef USE_SFML2
 	sfTerrainHeightMap.loadFromFile("data/terrain/terrain_height2048.png");
 	sfTerrainHeightMap.setSmooth(true);
 	terrainHeightMap = sfTerrainHeightMap.getNativeHandle();
@@ -129,9 +129,15 @@ void HelloTerrainDrawingProgram::Init()
 	sfTerrainTexture.loadFromFile("data/terrain/terrain_texture2048.png");
 	sfTerrainTexture.setSmooth(true);
 	terrainTexture = sfTerrainTexture.getNativeHandle();
-	//terrainHeightMap = CreateTexture("data/terrain/terrain_height2048.dds");
+#else
+	terrainHeightMap = CreateTexture("data/terrain/terrain_height2048.dds");
+	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	terrainTexture = CreateTexture("data/terrain/terrain_texture2048.dds");
+	glBindTexture(GL_TEXTURE_2D, terrainTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#endif
 
-	//terrainTexture = CreateTexture("data/terrain/terrain_texture2048.dds");
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
 
@@ -208,6 +214,7 @@ void HelloTerrainDrawingProgram::ProcessInput()
 	auto& inputManager = engine->GetInputManager();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
+#ifdef USE_SFML2
 	if (inputManager.GetButton(sf::Keyboard::W))
 	{
 		cameraPos += cameraSpeed * cameraFront * dt;
@@ -224,6 +231,26 @@ void HelloTerrainDrawingProgram::ProcessInput()
 	{
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
 	}
+#endif
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		cameraPos += cameraSpeed * cameraFront * dt;
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		cameraPos -= cameraSpeed * cameraFront * dt;
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * dt;
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
+	}
+#endif
 
 	auto mousePos = inputManager.GetMousePosition();
 
@@ -279,14 +306,13 @@ void HelloTerrainDrawingProgram::UpdateUi() {
     ImGui::SliderFloat("Terrain Height Origin", &terrainOriginY, -10.0f, 10.0f, "height = %.3f");
 }
 
-int main()
+int main(int argc, char** argv)
 {
 	Engine engine;
 
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.bgColor = sf::Color::Black;
 	config.windowName = "Hello Terrain";
 
 	engine.AddDrawingProgram(new HelloTerrainDrawingProgram());

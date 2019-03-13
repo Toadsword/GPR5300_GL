@@ -7,8 +7,6 @@
 #include <graphics.h>
 
 
-#include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -126,7 +124,7 @@ void HelloCameraDrawingProgram::Init()
 {
 	programName = "HelloCamera";
 	shaders.push_back(&shaderProgram);
-    shaderProgram.Init("shaders/hello_camera/camera_vertex.glsl", "shaders/hello_camera/camera_fragment.glsl");
+    shaderProgram.Init("shaders/hello_camera/camera.vert", "shaders/hello_camera/camera.frag");
 
 #ifdef CAMERA_CONTROLS
 	Engine* engine = Engine::GetPtr();
@@ -218,6 +216,7 @@ void HelloCameraDrawingProgram::ProcessInput()
 	auto& inputManager = engine->GetInputManager();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
+#ifdef USE_SFML2
 	if (inputManager.GetButton(sf::Keyboard::W))
 	{
 		cameraPos += cameraSpeed * cameraFront * dt;
@@ -234,7 +233,26 @@ void HelloCameraDrawingProgram::ProcessInput()
 	{
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
 	}
+#endif
 
+#ifdef USE_SDL2
+	if(inputManager.GetButton(SDLK_w))
+	{
+		cameraPos += cameraSpeed * cameraFront * dt;
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		cameraPos -= cameraSpeed * cameraFront * dt;
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * dt;
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
+	}
+#endif
 	auto mousePos = inputManager.GetMousePosition();
 
 	float xoffset = mousePos.x - lastX;
@@ -271,15 +289,14 @@ void HelloCameraDrawingProgram::ProcessInput()
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
     Engine engine;
 
     auto& config = engine.GetConfiguration();
     config.screenWidth = 1024;
     config.screenHeight = 1024;
-    config.bgColor = sf::Color::Black;
-    config.windowName = "Hello Camera";
+	config.windowName = "Hello Camera";
 
     engine.AddDrawingProgram(new HelloCameraDrawingProgram());
 
