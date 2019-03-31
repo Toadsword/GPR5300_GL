@@ -24,6 +24,7 @@ if(MSVC)
         $<$<CONFIG:>:/MT> #---------|
         $<$<CONFIG:Debug>:/MTd> #---|-- Statically link the runtime libraries
         $<$<CONFIG:Release>:/MT> #--|
+		$<$<CONFIG:RelWithDebInfo>:/MT>
     )
 endif()
 
@@ -97,7 +98,9 @@ if(USE_SDL2)
 		add_subdirectory(${GLEW_DIR})
 		LIST(APPEND SFGE_LIBRARIES
 			glew)
-			
+		#stb_image
+		set(SFML_DIR ${EXTERNAL_DIR}/SFML)
+		include_directories(${SFML_DIR}/extlibs/headers)
 	endif()
 	
 endif()

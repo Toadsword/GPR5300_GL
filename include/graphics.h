@@ -30,4 +30,5 @@ protected:
 };
 
 
-unsigned int CreateTexture(char const* filename);
+unsigned int gliCreateTexture(char const* filename);
+unsigned int stbCreateTexture(const char* filename, bool smooth = true, bool mipMaps = true);

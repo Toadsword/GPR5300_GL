@@ -132,7 +132,7 @@ void HelloCameraDrawingProgram::Init()
 	lastX = config.screenWidth/2.0f;
 	lastY = config.screenHeight/2.0f;
 #endif
-	textureWall = CreateTexture("data/sprites/wall.dds");
+	textureWall = gliCreateTexture("data/sprites/wall.dds");
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 

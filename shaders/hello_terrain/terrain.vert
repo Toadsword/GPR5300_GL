@@ -14,9 +14,11 @@ uniform sampler2D texture1;
 
 void main()
 {
-	vec4 pos = projection * view * model * vec4(aPos, 1.0);
-	float height = texture(texture1, vec2(aTexCoord.x, aTexCoord.y)).r * heightResolution + heightOrigin;
-	pos.y = height;
+	vec4 modelPos = vec4(aPos, 1.0);
+	float height = texture(texture1, aTexCoord).r * heightResolution + heightOrigin;
+	modelPos.y = height;
+	vec4 pos = projection * view * model * modelPos;
+
 	gl_Position = pos;
-	TexCoord = vec2(aTexCoord.x, aTexCoord.y);
+	TexCoord = aTexCoord;
 }

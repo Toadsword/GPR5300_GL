@@ -80,7 +80,7 @@ void HelloTerrainDrawingProgram::Init()
 		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
 
 #ifdef _DEBUG
-        std::cout << "Vertex: " << i << " x: "<<vertices[3 * i]<<" y:"<< vertices[3 * i + 2] <<"\n";
+        //std::cout << "Vertex: " << i << " x: "<<vertices[3 * i]<<" y:"<< vertices[3 * i + 2] <<"\n";
 #endif
     }
 	for (size_t i = 0l; i < verticesCount; i++)
@@ -90,7 +90,7 @@ void HelloTerrainDrawingProgram::Init()
 		texCoords[2 * i] = (float)((i % terrainWidth)+1) / (width+1);
         texCoords[2 * i + 1]  = (float)((i / terrainWidth)+1) / (height+1);
 #ifdef _DEBUG
-        std::cout << "TexCoords: " << i << " x: "<<texCoords[2 * i] <<" y:"<< texCoords[2 * i + 1] <<"\n";
+        //std::cout << "TexCoords: " << i << " x: "<<texCoords[2 * i] <<" y:"<< texCoords[2 * i + 1] <<"\n";
 #endif
 	}
 	indices = (unsigned *)calloc(3l * faceCount, sizeof(unsigned));
@@ -106,14 +106,14 @@ void HelloTerrainDrawingProgram::Init()
 	        indices[6*quad+1] = origin+1;
 	        indices[6*quad+2] = originBottom;
 #ifdef _DEBUG
-            std::cout << "Indices "<<6*quad<<" 1: "<<indices[6*quad] <<" 2: "<< indices[6*quad+1]  <<" 3: " <<indices[6*quad+2]<<"\n";
+            //std::cout << "Indices "<<6*quad<<" 1: "<<indices[6*quad] <<" 2: "<< indices[6*quad+1]  <<" 3: " <<indices[6*quad+2]<<"\n";
 #endif
 	        //face2
             indices[6*quad+3] = origin+1;
             indices[6*quad+4] = originBottom+1;
             indices[6*quad+5] = originBottom;
 #ifdef _DEBUG
-            std::cout << "Indices "<<6*quad+3<<" 1: "<<indices[6*quad+3]<<" 2: "<< indices[6*quad+4]  <<" 3: " <<indices[6*quad+5]<<"\n";
+            //std::cout << "Indices "<<6*quad+3<<" 1: "<<indices[6*quad+3]<<" 2: "<< indices[6*quad+4]  <<" 3: " <<indices[6*quad+5]<<"\n";
 #endif
             quad++;
         }
@@ -130,12 +130,8 @@ void HelloTerrainDrawingProgram::Init()
 	sfTerrainTexture.setSmooth(true);
 	terrainTexture = sfTerrainTexture.getNativeHandle();
 #else
-	terrainHeightMap = CreateTexture("data/terrain/terrain_height2048.dds");
-	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	terrainTexture = CreateTexture("data/terrain/terrain_texture2048.dds");
-	glBindTexture(GL_TEXTURE_2D, terrainTexture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	terrainHeightMap = stbCreateTexture("data/terrain/terrain_height2048.png",true, false);
+	terrainTexture = stbCreateTexture("data/terrain/terrain_texture2048.png", true, false);
 #endif
 
 	glGenBuffers(2, &VBO[0]);
@@ -174,9 +170,8 @@ void HelloTerrainDrawingProgram::Draw()
 	glm::mat4 view = glm::mat4(1.0f);
 	
 	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-	
+	view = glm::rotate(view, 45.0f, glm::vec3(0, 1, 0));
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f,0.0f,1.0f));
 	
 	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)config.screenWidth / config.screenHeight, 0.1f, 1000.0f);
 

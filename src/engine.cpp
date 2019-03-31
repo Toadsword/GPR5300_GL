@@ -72,7 +72,7 @@ void Engine::Init()
 
 	// 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
 
 	// Turn on double buffering with a 24bit Z buffer.
 	// You may need to change this to 16 or 32 for your system
@@ -216,6 +216,17 @@ void Engine::Loop()
 				configuration.screenHeight = event.window.data2;
 			}
 		}
+		if(event.type == SDL_KEYDOWN)
+		{
+			switch(event.key.keysym.scancode)
+			{
+			case SDL_SCANCODE_1:
+				SwitchWireframeMode();
+				break;
+			default:
+				break;
+			}
+		}
 	}
 	if (enableImGui)
 	{
@@ -229,12 +240,17 @@ void Engine::Loop()
 	ImGui::Render();
 	SDL_GL_MakeCurrent(window, glContext);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if(wireframeMode)
+	{
+		glPolygonMode(GL_FRONT_AND_BACK,  GL_LINE);
+	}
 	for (auto drawingProgram : drawingPrograms)
 	{
 		drawingProgram->Draw();
 	}
 	if (enableImGui)
 	{
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
 	SDL_GL_SwapWindow(window);

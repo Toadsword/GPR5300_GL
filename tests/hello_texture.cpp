@@ -64,7 +64,7 @@ void HelloTextureDrawingProgram::Init()
 		"shaders/hello_texture/texture.frag"
 #endif
 	);
-	textureWall = CreateTexture("data/sprites/wall.dds");
+	textureWall = gliCreateTexture("data/sprites/wall.dds");
 #ifdef OTHER_TEXTURE
 	sfTextureOtherPlay.loadFromFile("data/sprites/other_play.png");
 	textureOtherPlay = sfTextureOtherPlay.getNativeHandle();

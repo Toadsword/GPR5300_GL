@@ -9,9 +9,12 @@
 #endif
 #ifdef USE_SFML2
 #include <SFML/OpenGL.hpp>
+#include "stb_image/stb_image.h"
 #endif
 #ifdef USE_SDL2
 #include <SDL_opengl.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image/stb_image.h"
 #endif
 
 #include <gli/gli.hpp>
@@ -77,7 +80,7 @@ int Shader::GetProgram()
 	return shaderProgram;
 }
 
-unsigned CreateTexture(char const* filename)
+unsigned gliCreateTexture(char const* filename)
 {
 #ifndef USE_EMSCRIPTEN
 	gli::texture Texture = gli::load(filename);
@@ -197,6 +200,55 @@ unsigned CreateTexture(char const* filename)
 	return TextureName;
 #endif
 	return 0;
+}
+
+unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps)
+{
+	std::string extension = GetFilenameExtension(filename);
+	int width, height, nrChannels;
+
+	int reqComponents = 0;
+	if (extension == ".jpg")
+		reqComponents = 3;
+	else if (extension == ".png")
+		reqComponents = 4;
+
+	unsigned char *data = stbi_load(filename, &width, &height, &nrChannels, reqComponents);
+	if (data == nullptr)
+	{
+		std::cerr << "[Error] Texture: cannot load " << filename << "\n";
+		return 0;
+	}
+	unsigned int texture;
+	glGenTextures(1, &texture);
+
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth?GL_LINEAR:GL_NEAREST);
+	if(mipMaps)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
+	}
+	if (extension == ".jpg")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	}
+	else if (extension == ".png")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
+	if (mipMaps)
+	{
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	stbi_image_free(data);
+	return texture;
 }
 
 const std::string& DrawingProgram::GetProgramName()
