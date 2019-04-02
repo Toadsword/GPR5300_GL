@@ -110,7 +110,7 @@ set(BUILD_SHARED_LIBS FALSE CACHE INTERNAL "")
 set(ASSIMP_BUILD_ASSIMP_TOOLS FALSE CACHE INTERNAL "")
 set(ASSIMP_BUILD_SAMPLES FALSE CACHE INTERNAL "")
 set(ASSIMP_BUILD_TESTS FALSE CACHE INTERNAL "")
-set(ASSIMP_NO_EXPORT FALSE CACHE INTERNAL "")
+set(ASSIMP_NO_EXPORT TRUE CACHE INTERNAL "")
 set(ASSIMP_DIR ${EXTERNAL_DIR}/assimp)
 include_directories(${ASSIMP_DIR}/include ${CMAKE_BINARY_DIR}/externals/assimp/include)
 add_subdirectory(${ASSIMP_DIR})
@@ -202,9 +202,6 @@ foreach(course_file ${COURSE_FILES} )
 	IF(UNIX)
 		set_target_properties(${course_name} PROPERTIES COMPILE_FLAGS "-save-temps -ffast-math")
 	ENDIF(UNIX)
-	if(MSVC)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /Oi")
-	endif(MSVC)
 	set_target_properties (${course_name} PROPERTIES
     FOLDER Courses)
   IF(USE_EMSCRIPTEN)
@@ -213,7 +210,7 @@ foreach(course_file ${COURSE_FILES} )
   add_custom_command(TARGET ${course_name} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders)
-add_custom_command(TARGET ${course_name} POST_BUILD
+  add_custom_command(TARGET ${course_name} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
 endforeach()

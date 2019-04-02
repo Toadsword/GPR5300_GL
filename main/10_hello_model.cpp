@@ -36,7 +36,7 @@ private:
 
 void HelloModelDrawingProgram::Init()
 {
-	programName = "HelloLight";
+	programName = "Hello Model";
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
@@ -47,9 +47,10 @@ void HelloModelDrawingProgram::Init()
 		"shaders/10_hello_model/model.vert",
 		"shaders/10_hello_model/model.frag");
 	shaders.push_back(&modelShaderProgram);
-	// "data/models/nanosuit/scene.gltf"
+	// "data/models/nanosuit/scene.fbx"
 	// "data/models/van_gogh_room/Enter a title.obj"
-	model.Init("data/models/nanosuit/scene.fbx");
+	// 
+	model.Init("data/models/nanosuit2/nanosuit.obj");
 }
 
 void HelloModelDrawingProgram::Draw()
@@ -151,7 +152,7 @@ int main(int argc, char** argv)
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.windowName = "Hello Light";
+	config.windowName = "Hello Model";
 	engine.AddDrawingProgram(new HelloModelDrawingProgram());
 
 	engine.Init();
