@@ -10,6 +10,7 @@
 #include <glm/mat4x4.hpp>
 #include "camera.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "imgui.h"
 
 
 class HelloLightDrawingProgram : public DrawingProgram
@@ -19,7 +20,7 @@ public:
 	void Draw() override;
 	void Destroy() override;
 	void ProcessInput();
-
+	void UpdateUi() override;
 private:
 	Shader objShaderProgram;
 	Shader lampShaderProgram;
@@ -73,9 +74,16 @@ private:
 
 	glm::vec3 lightPos = { 2.0f, 0.0f, 2.0f };
 
-	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 10.0f));
 	float lastX = 0;
 	float lastY = 0;
+
+	float ambientStrength = 0.2f;
+	float specularStrength = 0.5f;
+	float diffuseStrength = 1.0f;
+	int specularPow = 256;
+	float objectColor[3] = { 1.0f, 0.5f, 0.31f };
+	float lightColor[3] = {1.0f,1.0f,1.0f};
 };
 
 void HelloLightDrawingProgram::Init()
@@ -133,11 +141,12 @@ void HelloLightDrawingProgram::Draw()
 	glEnable(GL_DEPTH_TEST);
 
 	objShaderProgram.Bind();
-	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "ambientStrength"), 0.2f);
-	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "specularStrength"), 0.5f);
-	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "objectColor"), 1.0f, 0.5f, 0.31f);
-	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "lightColor"), 1.0f, 1.0f, 1.0f);
-	glUniform1i(glGetUniformLocation(objShaderProgram.GetProgram(), "specularPow"), 256);
+	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "ambientStrength"), ambientStrength);
+	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "specularStrength"), specularStrength);
+	objShaderProgram.SetFloat("diffuseStrength", diffuseStrength);
+	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "objectColor"), 1, objectColor);
+	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "lightColor"), 1, lightColor);
+	glUniform1i(glGetUniformLocation(objShaderProgram.GetProgram(), "specularPow"), specularPow);
 	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "lightPos"), 1, &lightPos[0]);
 	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "viewPos"), 1, &camera.Position[0]);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
@@ -156,6 +165,7 @@ void HelloLightDrawingProgram::Draw()
 
 	// also draw the lamp object
 	lampShaderProgram.Bind();
+	lampShaderProgram.SetVec3("lightColor", lightColor[0], lightColor[1], lightColor[2]);
 	glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 	glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "view"), 1, GL_FALSE, glm::value_ptr(view));
 
@@ -232,6 +242,16 @@ void HelloLightDrawingProgram::ProcessInput()
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 
 
+}
+
+void HelloLightDrawingProgram::UpdateUi()
+{
+	ImGui::Separator();
+	ImGui::InputFloat("ambientStrength", &ambientStrength);
+	ImGui::InputFloat("diffuseStrength", &diffuseStrength);
+	ImGui::InputFloat("specularStrength", &specularStrength);
+	ImGui::ColorEdit3("objectColor", objectColor);
+	ImGui::ColorEdit3("lightColor", lightColor);
 }
 
 
