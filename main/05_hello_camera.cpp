@@ -16,10 +16,10 @@ const float pixelPerUnit = 100.0f;
 //#define ORTHOGRAPHIC
 #define CAMERA_CONTROLS
 
-class HelloCameraDrawingProgram : public DrawingProgram
+class HelloStencilDrawingProgram : public DrawingProgram
 {
 public:
-	~HelloCameraDrawingProgram() override;
+	~HelloStencilDrawingProgram() override;
     void Init() override;
     void Draw() override;
 	void Destroy() override;
@@ -28,8 +28,8 @@ private:
 public:
     
 private:
-    Shader shaderProgram;
-	unsigned int VBO, VAO;
+    Shader cubeShaderProgram;
+	unsigned int cubeVBO, cubeVAO;
 	unsigned int textureWall;
 	float vertices[5*36] = 
 	{
@@ -116,15 +116,15 @@ private:
 #endif
 };
 
-HelloCameraDrawingProgram::~HelloCameraDrawingProgram()
+HelloStencilDrawingProgram::~HelloStencilDrawingProgram()
 {
 }
 
-void HelloCameraDrawingProgram::Init()
+void HelloStencilDrawingProgram::Init()
 {
 	programName = "HelloCamera";
-	shaders.push_back(&shaderProgram);
-    shaderProgram.Init("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
+	shaders.push_back(&cubeShaderProgram);
+    cubeShaderProgram.Init("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
 
 #ifdef CAMERA_CONTROLS
 	Engine* engine = Engine::GetPtr();
@@ -133,12 +133,12 @@ void HelloCameraDrawingProgram::Init()
 	lastY = config.screenHeight/2.0f;
 #endif
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &cubeVAO);
+	glGenBuffers(1, &cubeVBO);
 
-	glBindVertexArray(VAO);
+	glBindVertexArray(cubeVAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// position attribute
@@ -152,7 +152,7 @@ void HelloCameraDrawingProgram::Init()
 
 }
 
-void HelloCameraDrawingProgram::Draw()
+void HelloStencilDrawingProgram::Draw()
 {
 	ProcessInput();
 
@@ -181,22 +181,22 @@ void HelloCameraDrawingProgram::Draw()
 	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)config.screenWidth / config.screenHeight, 0.1f, 100.0f);
 #endif
 
-	shaderProgram.Bind();
-	const int viewLoc = glGetUniformLocation(shaderProgram.GetProgram(), "view");
+	cubeShaderProgram.Bind();
+	const int viewLoc = glGetUniformLocation(cubeShaderProgram.GetProgram(), "view");
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-	const int projectionLoc = glGetUniformLocation(shaderProgram.GetProgram(), "projection");
+	const int projectionLoc = glGetUniformLocation(cubeShaderProgram.GetProgram(), "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 	glBindTexture(GL_TEXTURE_2D, textureWall);
-	glBindVertexArray(VAO);
+	glBindVertexArray(cubeVAO);
 	for(int i = 0; i < 10;i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, cubePositions[i]);
 		model = glm::rotate(model, (float)engine->GetTimeSinceInit() * glm::radians(50.0f) + cubeInitialAngle[i], glm::vec3(0.5f, 1.0f, 0.0f));
 		
-		const int modelLoc = glGetUniformLocation(shaderProgram.GetProgram(), "model");
+		const int modelLoc = glGetUniformLocation(cubeShaderProgram.GetProgram(), "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -204,13 +204,13 @@ void HelloCameraDrawingProgram::Draw()
 	glBindVertexArray(0);
 }
 
-void HelloCameraDrawingProgram::Destroy()
+void HelloStencilDrawingProgram::Destroy()
 {
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteBuffers(1, &cubeVBO);
 }
 
-void HelloCameraDrawingProgram::ProcessInput()
+void HelloStencilDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
@@ -298,7 +298,7 @@ int main(int argc, char** argv)
     config.screenHeight = 1024;
 	config.windowName = "Hello Camera";
 
-    engine.AddDrawingProgram(new HelloCameraDrawingProgram());
+    engine.AddDrawingProgram(new HelloStencilDrawingProgram());
 
     engine.Init();
     engine.GameLoop();
