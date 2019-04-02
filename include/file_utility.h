@@ -4,3 +4,4 @@
 
 const std::string LoadFile(std::string path);
 std::string GetFilenameExtension(std::string path);
+std::string GetFilenameFromPath(std::string path);
