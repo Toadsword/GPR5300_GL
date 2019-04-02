@@ -13,7 +13,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
-class HelloModelDrawingProgram : public DrawingProgram
+class HelloLightDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
@@ -34,7 +34,7 @@ private:
 	float lastY = 0;
 };
 
-void HelloModelDrawingProgram::Init()
+void HelloLightDrawingProgram::Init()
 {
 	programName = "Hello Model";
 
@@ -53,7 +53,7 @@ void HelloModelDrawingProgram::Init()
 	model.Init("data/models/nanosuit2/nanosuit.obj");
 }
 
-void HelloModelDrawingProgram::Draw()
+void HelloLightDrawingProgram::Draw()
 {
 	ProcessInput();
 
@@ -81,13 +81,13 @@ void HelloModelDrawingProgram::Draw()
 
 }
 
-void HelloModelDrawingProgram::Destroy()
+void HelloLightDrawingProgram::Destroy()
 {
 }
 
 
 
-void HelloModelDrawingProgram::ProcessInput()
+void HelloLightDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Hello Model";
-	engine.AddDrawingProgram(new HelloModelDrawingProgram());
+	engine.AddDrawingProgram(new HelloLightDrawingProgram());
 
 	engine.Init();
 	engine.GameLoop();

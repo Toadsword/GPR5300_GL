@@ -13,7 +13,7 @@
 #include "imgui.h"
 
 
-class HelloModelDrawingProgram : public DrawingProgram
+class HelloLightDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
@@ -87,7 +87,7 @@ private:
 	float lightColor[3] = {1.0f,1.0f,1.0f};
 };
 
-void HelloModelDrawingProgram::Init()
+void HelloLightDrawingProgram::Init()
 {
 	programName = "HelloLight";
 
@@ -97,11 +97,11 @@ void HelloModelDrawingProgram::Init()
 	lastY = config.screenHeight / 2.0f;
 
 	objShaderProgram.Init(
-		"shaders/06_hello_light/light.vert",
-		"shaders/06_hello_light/light.frag");
+		"shaders/06_hello_phong_light/light.vert",
+		"shaders/06_hello_phong_light/light.frag");
 	lampShaderProgram.Init(
-		"shaders/06_hello_light/lamp.vert",
-		"shaders/06_hello_light/lamp.frag");
+		"shaders/06_hello_phong_light/lamp.vert",
+		"shaders/06_hello_phong_light/lamp.frag");
 	shaders.push_back(&objShaderProgram);
 	shaders.push_back(&lampShaderProgram);
 
@@ -130,7 +130,7 @@ void HelloModelDrawingProgram::Init()
 	glBindVertexArray(0);
 }
 
-void HelloModelDrawingProgram::Draw()
+void HelloLightDrawingProgram::Draw()
 {
 	ProcessInput();
 
@@ -181,13 +181,13 @@ void HelloModelDrawingProgram::Draw()
 
 }
 
-void HelloModelDrawingProgram::Destroy()
+void HelloLightDrawingProgram::Destroy()
 {
 }
 
 
 
-void HelloModelDrawingProgram::ProcessInput()
+void HelloLightDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
@@ -263,7 +263,8 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Hello Light";
-	engine.AddDrawingProgram(new HelloModelDrawingProgram());
+	
+	engine.AddDrawingProgram(new HelloLightDrawingProgram());
 
 	engine.Init();
 	engine.GameLoop();
