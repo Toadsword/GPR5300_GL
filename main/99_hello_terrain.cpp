@@ -119,7 +119,7 @@ void HelloTerrainDrawingProgram::Init()
         }
     }
 
-	shaderProgram.Init("shaders/hello_terrain/terrain.vert", "shaders/hello_terrain/terrain.frag");
+	shaderProgram.Init("shaders/99_hello_terrain/terrain.vert", "shaders/99_hello_terrain/terrain.frag");
 	shaders.push_back(&shaderProgram);
 #ifdef USE_SFML2
 	sfTerrainHeightMap.loadFromFile("data/terrain/terrain_height2048.png");

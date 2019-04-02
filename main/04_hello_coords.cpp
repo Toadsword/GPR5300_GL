@@ -107,8 +107,8 @@ void HelloCoordsDrawingProgram::Init()
 
 	shaders.push_back(&shaderProgram);
 	shaderProgram.Init(
-		"shaders/hello_coords/coords.vert",
-		"shaders/hello_coords/coords.frag");
+		"shaders/04_hello_coords/coords.vert",
+		"shaders/04_hello_coords/coords.frag");
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
 
 #ifdef CUBE_SAMPLE

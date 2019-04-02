@@ -24,6 +24,7 @@ private:
 	Shader objShaderProgram;
 	Shader lampShaderProgram;
 
+	//pos + normal
 	float vertices[6*36] = {
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 		 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -88,16 +89,15 @@ void HelloLightDrawingProgram::Init()
 	lastY = config.screenHeight / 2.0f;
 
 	objShaderProgram.Init(
-		"shaders/hello_light/light.vert",
-		"shaders/hello_light/light.frag");
+		"shaders/06_hello_light/light.vert",
+		"shaders/06_hello_light/light.frag");
 	lampShaderProgram.Init(
-		"shaders/hello_light/lamp.vert",
-		"shaders/hello_light/lamp.frag");
+		"shaders/06_hello_light/lamp.vert",
+		"shaders/06_hello_light/lamp.frag");
 	shaders.push_back(&objShaderProgram);
 	shaders.push_back(&lampShaderProgram);
 
 	// first, configure the cube's VAO (and VBO)
-
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
 
@@ -116,6 +116,7 @@ void HelloLightDrawingProgram::Init()
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// note that we update the lamp's position attribute's stride to reflect the updated buffer data
+	//reusing the cube data, without the normals
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);

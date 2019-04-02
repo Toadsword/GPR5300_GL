@@ -57,11 +57,11 @@ void HelloTextureDrawingProgram::Init()
 	glGenBuffers(1, &EBO);
 
 	shaderProgram.Init(
-		"shaders/hello_texture/texture.vert",
+		"shaders/02_hello_texture/texture.vert",
 #ifdef OTHER_TEXTURE
-		"shaders/hello_texture/texture_other_fragment.glsl"
+		"shaders/02_hello_texture/texture_other_fragment.glsl"
 #else
-		"shaders/hello_texture/texture.frag"
+		"shaders/02_hello_texture/texture.frag"
 #endif
 	);
 	textureWall = gliCreateTexture("data/sprites/wall.dds");

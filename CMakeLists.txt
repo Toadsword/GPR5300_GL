@@ -174,7 +174,7 @@ add_custom_command(TARGET COMMON POST_BUILD
 file(COPY data/ DESTINATION ${CMAKE_BINARY_DIR}/data/)
 file(COPY shaders/ DESTINATION ${CMAKE_BINARY_DIR}/shaders/)
 #SFGE COURSES
-SET(SFGE_COURSE_DIR ${CMAKE_SOURCE_DIR}/tests)
+SET(SFGE_COURSE_DIR ${CMAKE_SOURCE_DIR}/main)
 file(GLOB COURSE_FILES ${SFGE_COURSE_DIR}/*.cpp )
 foreach(course_file ${COURSE_FILES} )
     # I used a simple string replace, to cut off .cpp.
@@ -190,6 +190,9 @@ foreach(course_file ${COURSE_FILES} )
 	IF(UNIX)
 		set_target_properties(${course_name} PROPERTIES COMPILE_FLAGS "-save-temps -ffast-math")
 	ENDIF(UNIX)
+	if(MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /Oi")
+	endif(MSVC)
 	set_target_properties (${course_name} PROPERTIES
     FOLDER Courses)
   IF(USE_EMSCRIPTEN)

@@ -50,8 +50,8 @@ void HelloTransformDrawingProgram::Init()
     glGenBuffers(1, &EBO);
 
     shaderProgram.Init(
-            "shaders/hello_transform/transform.vert",
-            "shaders/hello_transform/transform.frag"
+            "shaders/03_hello_transform/transform.vert",
+            "shaders/03_hello_transform/transform.frag"
     );
 
     textureWall = gliCreateTexture("data/sprites/wall.dds");

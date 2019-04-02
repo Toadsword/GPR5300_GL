@@ -124,7 +124,7 @@ void HelloCameraDrawingProgram::Init()
 {
 	programName = "HelloCamera";
 	shaders.push_back(&shaderProgram);
-    shaderProgram.Init("shaders/hello_camera/camera.vert", "shaders/hello_camera/camera.frag");
+    shaderProgram.Init("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
 
 #ifdef CAMERA_CONTROLS
 	Engine* engine = Engine::GetPtr();
