@@ -12,7 +12,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
-class HelloLightDrawingProgram : public DrawingProgram
+class HelloModelDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
@@ -79,7 +79,7 @@ private:
 	float lastY = 0;
 };
 
-void HelloLightDrawingProgram::Init()
+void HelloModelDrawingProgram::Init()
 {
 	programName = "HelloLight";
 
@@ -122,7 +122,7 @@ void HelloLightDrawingProgram::Init()
 	glBindVertexArray(0);
 }
 
-void HelloLightDrawingProgram::Draw()
+void HelloModelDrawingProgram::Draw()
 {
 	ProcessInput();
 
@@ -171,13 +171,13 @@ void HelloLightDrawingProgram::Draw()
 
 }
 
-void HelloLightDrawingProgram::Destroy()
+void HelloModelDrawingProgram::Destroy()
 {
 }
 
 
 
-void HelloLightDrawingProgram::ProcessInput()
+void HelloModelDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
@@ -243,7 +243,7 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Hello Light";
-	engine.AddDrawingProgram(new HelloLightDrawingProgram());
+	engine.AddDrawingProgram(new HelloModelDrawingProgram());
 
 	engine.Init();
 	engine.GameLoop();

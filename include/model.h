@@ -1,6 +1,4 @@
 #pragma once
-#include <string>
-#include <vector>
 
 #include <engine.h>
 #include <graphics.h>
@@ -13,20 +11,24 @@
 class Model
 {
 public:
+	/*  Model Data */
+	std::vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+	std::vector<Mesh> meshes;
+	std::string directory;
+	bool gammaCorrection;
 	/*  Functions   */
-	Model(char *path)
+	void Init(char *path)
 	{
 		loadModel(path);
 	}
 	void Draw(Shader shader);
 private:
-	/*  Model Data  */
-	std::vector<Mesh> meshes;
-	std::string directory;
+
 	/*  Functions   */
 	void loadModel(std::string path);
 	void processNode(aiNode *node, const aiScene *scene);
 	Mesh processMesh(aiMesh *mesh, const aiScene *scene);
 	std::vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 		std::string typeName);
+	unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma=false);
 };

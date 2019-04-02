@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+
 #include <engine.h>
 #include <graphics.h>
 
@@ -20,10 +21,10 @@ struct Vertex {
 	glm::vec3 Bitangent;
 };
 
-
 struct Texture {
 	unsigned int id;
 	std::string type;
+	std::string path;
 };
 
 class Mesh

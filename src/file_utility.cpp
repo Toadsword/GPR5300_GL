@@ -24,3 +24,17 @@ std::string GetFilenameExtension(std::string path)
 	extension = filename.substr(filenameExtensionIndex);
 	return extension;
 }
+
+std::string GetFilenameFromPath(std::string path)
+{
+	std::string extension = "";
+#ifdef WIN32
+	const auto folderLastIndex = path.find_last_of('\\');
+#else
+	const auto folderLastIndex = path.find_last_of('/');
+#endif
+
+	std::string filename = path.substr(folderLastIndex + 1, path.size());
+	
+	return filename;
+}
