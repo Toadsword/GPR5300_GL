@@ -4,7 +4,7 @@
 #include "camera.h"
 #include <glm/gtc/type_ptr.hpp>
 
-class HelloLightingMapsDrawingProgram : public DrawingProgram
+class HelloLightCastersDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
@@ -98,7 +98,7 @@ private:
 	float lastY = 0;
 };
 
-void HelloLightingMapsDrawingProgram::Init()
+void HelloLightCastersDrawingProgram::Init()
 {
 	programName = "HelloMaterial";
 
@@ -141,7 +141,7 @@ void HelloLightingMapsDrawingProgram::Init()
 	glBindVertexArray(0);
 }
 
-void HelloLightingMapsDrawingProgram::Draw()
+void HelloLightCastersDrawingProgram::Draw()
 {
 	ProcessInput();
 
@@ -202,11 +202,11 @@ void HelloLightingMapsDrawingProgram::Draw()
 	glBindVertexArray(0);
 }
 
-void HelloLightingMapsDrawingProgram::Destroy()
+void HelloLightCastersDrawingProgram::Destroy()
 {
 }
 
-void HelloLightingMapsDrawingProgram::ProcessInput()
+void HelloLightCastersDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 	config.screenHeight = 1024;
 	config.windowName = "Hello Material";
 
-	engine.AddDrawingProgram(new HelloLightingMapsDrawingProgram());
+	engine.AddDrawingProgram(new HelloLightCastersDrawingProgram());
 
 	engine.Init();
 	engine.GameLoop();

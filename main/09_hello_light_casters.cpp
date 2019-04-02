@@ -4,6 +4,14 @@
 #include "camera.h"
 #include <glm/gtc/type_ptr.hpp>
 
+enum class LightType
+{
+	DIRECTIONAL,
+	POINT,
+	FLASH,
+	SPOT
+};
+
 class HelloLightCastersDrawingProgram : public DrawingProgram
 {
 public:
@@ -100,25 +108,49 @@ private:
 
 	int diffuseMapTexture = 0;
 	int specularMapTexture = 0;
+
+	LightType lightType = LightType::SPOT;//Change here for the different light casters
 };
 
 void HelloLightCastersDrawingProgram::Init()
 {
-	programName = "HelloLightMaps";
+	programName = "Hello Light Casters";
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
+	switch(lightType)
+	{
+	case LightType::DIRECTIONAL:
+		objShaderProgram.Init(
+			"shaders/09_hello_light_casters/material.vert",
+			"shaders/09_hello_light_casters/material_directional.frag");
+		break;
+	case LightType::POINT:
+		objShaderProgram.Init(
+			"shaders/09_hello_light_casters/material.vert",
+			"shaders/09_hello_light_casters/material_point.frag");
+		lampShaderProgram.Init(
+			"shaders/09_hello_light_casters/lamp.vert",
+			"shaders/09_hello_light_casters/lamp.frag");
 
-	objShaderProgram.Init(
-		"shaders/08_hello_lighting_maps/material.vert",
-		"shaders/08_hello_lighting_maps/material.frag");
-	lampShaderProgram.Init(
-		"shaders/08_hello_lighting_maps/lamp.vert",
-		"shaders/08_hello_lighting_maps/lamp.frag");
+		shaders.push_back(&lampShaderProgram);
+		break;
+	case LightType::FLASH:
+		objShaderProgram.Init(
+			"shaders/09_hello_light_casters/material.vert",
+			"shaders/09_hello_light_casters/material_flashlight.frag");
+		break;
+	case LightType::SPOT:
+		objShaderProgram.Init(
+			"shaders/09_hello_light_casters/material.vert",
+			"shaders/09_hello_light_casters/material_spotlight.frag");
+		break;
+	default:
+		break;
+	}
 	shaders.push_back(&objShaderProgram);
-	shaders.push_back(&lampShaderProgram);
 
 	diffuseMapTexture = stbCreateTexture("data/sprites/container2.png");
 	specularMapTexture = stbCreateTexture("data/sprites/container2_specular.png");
@@ -140,14 +172,17 @@ void HelloLightCastersDrawingProgram::Init()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
-	glGenVertexArrays(1, &lightVAO);
-	glBindVertexArray(lightVAO);
+	if (lightType != LightType::DIRECTIONAL) //No need for light cube in directional
+	{
+		glGenVertexArrays(1, &lightVAO);
+		glBindVertexArray(lightVAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// note that we update the lamp's position attribute's stride to reflect the updated buffer data
-	//reusing the cube data, without the normals
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		// note that we update the lamp's position attribute's stride to reflect the updated buffer data
+		//reusing the cube data, without the normals
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+	}
 	glBindVertexArray(0);
 }
 
@@ -170,7 +205,34 @@ void HelloLightCastersDrawingProgram::Draw()
 	glUniform1i(glGetUniformLocation(objShaderProgram.GetProgram(), "material.specular"), 1);//TEXTURE1
 	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "material.shininess"), 64.0f);
 	//light parameter
-	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &lightPos[0]);
+	switch(lightType)
+	{
+	case LightType::DIRECTIONAL:
+		glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.direction"), -0.2f, -1.0f, -0.3f);
+		break;
+	case LightType::POINT:
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.constant"), 1.0f);
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.linear"), 0.09f);
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.quadratic"), 0.032f);
+		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &lightPos[0]);
+		break;
+	case LightType::FLASH:
+	
+		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &camera.Position[0]);
+		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.direction"), 1, &camera.Front[0]);
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.cutOff"), glm::cos(glm::radians(12.5f)));
+		break;
+	case LightType::SPOT:
+		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &camera.Position[0]);
+		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.direction"), 1, &camera.Front[0]);
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.cutOff"), glm::cos(glm::radians(12.5f)));
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.outerCutOff"), glm::cos(glm::radians(15.0f)));
+
+		break;
+	default:
+		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &lightPos[0]);
+		break;
+	}
 	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.ambient"), 0.2f, 0.2f, 0.2f);
 	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.diffuse"), 0.5f, 0.5f, 0.5f); // darken the light a bit to fit the scene
 	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.specular"), 1.0f, 1.0f, 1.0f);
@@ -202,18 +264,21 @@ void HelloLightCastersDrawingProgram::Draw()
 		glBindVertexArray(0);
 	}
 	// also draw the lamp object
-	lampShaderProgram.Bind();
-	glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-	glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "view"), 1, GL_FALSE, glm::value_ptr(view));
+	if (lightType == LightType::POINT)
+	{
+		lampShaderProgram.Bind();
+		glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, lightPos);
-	model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-	glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "model"), 1, GL_FALSE, glm::value_ptr(model));
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+		glUniformMatrix4fv(glGetUniformLocation(lampShaderProgram.GetProgram(), "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-	glBindVertexArray(lightVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+	}
 }
 
 void HelloLightCastersDrawingProgram::Destroy()
@@ -266,7 +331,7 @@ int main(int argc, char** argv)
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.windowName = "Hello Light Maps";
+	config.windowName = "Hello Light Casters";
 
 	engine.AddDrawingProgram(new HelloLightCastersDrawingProgram());
 
