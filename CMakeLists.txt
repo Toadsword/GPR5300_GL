@@ -16,6 +16,7 @@ set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/externals)
 include_directories(include ${CMAKE_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SRC src/*.cpp include/*.h)
+file(GLOB CMN_SHADERS shaders/*.vert shaders/*.frag)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
@@ -104,6 +105,17 @@ if(USE_SDL2)
 	endif()
 	
 endif()
+#assimp
+set(BUILD_SHARED_LIBS FALSE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS FALSE)
+set(ASSIMP_BUILD_SAMPLES FALSE)
+set(ASSIMP_BUILD_TESTS FALSE)
+set(ASSIMP_NO_EXPORT FALSE)
+set(ASSIMP_DIR ${EXTERNAL_DIR}/assimp)
+include_directories(${ASSIMP_DIR}/include ${CMAKE_BINARY_DIR}/externals/assimp/include)
+add_subdirectory(${ASSIMP_DIR})
+LIST(APPEND SFGE_LIBRARIES
+			assimp)
 #gli
 set(GLI_DIR ${EXTERNAL_DIR}/gli)
 IF(NOT EXISTS ${GLI_DIR})
@@ -151,7 +163,7 @@ LIST(APPEND SFGE_LIBRARIES Remotery)
 endif()
 #COMMON
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
-add_library(COMMON ${SRC})
+add_library(COMMON ${SRC} ${CMN_SHADERS})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})
 set_property(TARGET COMMON PROPERTY CXX_STANDARD 17)
 
