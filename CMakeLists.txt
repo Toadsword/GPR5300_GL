@@ -27,7 +27,6 @@ if(MSVC)
         $<$<CONFIG:Release>:/MT> #--|
 		$<$<CONFIG:RelWithDebInfo>:/MT>
     )
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /Oi")
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
@@ -36,39 +35,11 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
   set(USE_SDL2 ON CACHE BOOL  "Use SDL2")
   set(USE_EMSCRIPTEN true)
-  set(USE_SFML2 OFF CACHE BOOL  "Compile for SFML2")
 
 else()
 #include either SFML2 or SDL2
   set(USE_SDL2 ON CACHE BOOL  "Use SDL2")
   set(USE_EMSCRIPTEN false)
-  set(USE_SFML2 OFF CACHE BOOL  "Compile for SFML2")
-endif()
-
-if(USE_SFML2)
-set(USE_SDL2 OFF)
-endif()
-
-if(USE_SFML2)
-
-	#SFML
-	set(SFML_DIR "${EXTERNAL_DIR}/SFML")
-	set(SFML_BUILD_EXAMPLES FALSE)
-	set(BUILD_SHARED_LIBS FALSE)
-	set(SFML_STATIC_LIBRARIES TRUE)
-	add_subdirectory(${SFML_DIR})
-	include_directories(${SFML_DIR}/include ${SFML_DIR}/src)
-
-	LIST(APPEND SFGE_LIBRARIES
-			sfml-graphics sfml-window sfml-system)
-
-	#glew
-	set(GLEW_DIR ${EXTERNAL_DIR}/glew)
-	add_compile_definitions(GLEW_STATIC)
-	include_directories(${GLEW_DIR}/include)
-	add_subdirectory(${GLEW_DIR})
-	LIST(APPEND SFGE_LIBRARIES
-			glew)
 endif()
 
 if(USE_SDL2)
@@ -203,9 +174,6 @@ foreach(course_file ${COURSE_FILES} )
 	IF(UNIX)
 		set_target_properties(${course_name} PROPERTIES COMPILE_FLAGS "-save-temps -ffast-math")
 	ENDIF(UNIX)
-	if(MSVC)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /Oi")
-	endif(MSVC)
 	set_target_properties (${course_name} PROPERTIES
     FOLDER Courses)
   IF(USE_EMSCRIPTEN)

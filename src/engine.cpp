@@ -37,19 +37,6 @@ Engine::~Engine()
 
 void Engine::Init()
 {
-#ifdef USE_SFML2
-	sf::ContextSettings settings;
-	settings.depthBits = 24;
-	settings.stencilBits = 8;
-	settings.antialiasingLevel = 4;
-	settings.majorVersion = 4;
-	settings.minorVersion = 6;
-
-	window = new sf::RenderWindow(sf::VideoMode(configuration.screenWidth, configuration.screenHeight), configuration.windowName, sf::Style::Default, settings);
-	//window->setVerticalSyncEnabled(true);
-	ImGui::SFML::Init(*window);
-#endif
-
 #ifdef USE_SDL2
 	SDL_Init(SDL_INIT_VIDEO);
 	// Set our OpenGL version.
@@ -63,8 +50,13 @@ void Engine::Init()
 	// Turn on double buffering with a 24bit Z buffer.
 	// You may need to change this to 16 or 32 for your system
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+
 	window = SDL_CreateWindow(
 		configuration.windowName.c_str(),
 		SDL_WINDOWPOS_CENTERED,
@@ -82,8 +74,8 @@ void Engine::Init()
 
 
 	glContext = SDL_GL_CreateContext(window);
-	
-	GLenum err = glewInit();
+
+	const GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
 		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
@@ -111,84 +103,10 @@ void Engine::Init()
 		drawingProgram->Init();
 	}
 	glClearColor(configuration.bgColor.r, configuration.bgColor.g, configuration.bgColor.b, configuration.bgColor.a);
+
+	SDL_GL_SetSwapInterval(configuration.vsync);
 }
 
-#ifdef USE_SFML2
-void Engine::GameLoop()
-{
-	running = true;
-	engineClock.restart();
-	deltaClock.restart();
-	while (running)
-	{
-		dt = deltaClock.restart();
-
-		// Event management
-		sf::Event event{};
-		while (window->pollEvent(event))
-		{
-			ImGui::SFML::ProcessEvent(event);
-			if (event.type == sf::Event::Closed)
-			{
-				running = false;
-			}
-			else if (event.type == sf::Event::Resized)
-			{
-				glViewport(0, 0, event.size.width, event.size.height);
-				configuration.screenWidth = event.size.width;
-				configuration.screenHeight = event.size.height;
-			}
-			else if(event.type == sf::Event::KeyPressed)
-			{
-				std::cout << "Key Pressed: " << event.key.code << "\n";
-				if(event.key.code == sf::Keyboard::Key::Num1)
-				{
-					SwitchWireframeMode();
-				}
-				if (event.key.code == sf::Keyboard::Key::Num2)
-				{
-					debugInfo = !debugInfo;
-				}
-				if(event.key.code == imguiKey)
-				{
-					enableImGui = !enableImGui;
-				}
-
-			}
-			if(event.type == sf::Event::MouseWheelScrolled)
-			{
-				inputManager.wheelDelta = event.mouseWheelScroll.delta;
-			}
-			else
-			{
-				inputManager.wheelDelta = 0.0f;
-			}
-		}
-		if (enableImGui)
-		{
-			ImGui::SFML::Update(*window, dt);
-			UpdateUi();
-		}
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		for (auto drawingProgram : drawingPrograms)
-		{
-			drawingProgram->Draw();
-		}
-
-		//window->pushGLStates();
-		if(enableImGui)
-			ImGui::SFML::Render(*window);
-		//window->popGLStates();
-
-		//switch framebuffer
-		window->display();
-		inputManager.Update();
-	}
-	delete window;
-
-}
-#endif
 
 #ifdef USE_SDL2
 
@@ -209,7 +127,8 @@ void Engine::Loop()
 		{
 			running = false;
 		}
-		if (event.type == SDL_WINDOWEVENT) {
+		if (event.type == SDL_WINDOWEVENT) 
+		{
 			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
 			{
 				std::cout << "Window Size: " << event.window.data1 << ", " << event.window.data2 << "\n";
@@ -296,18 +215,6 @@ void Engine::UpdateUi()
 	const auto windowSize = Vec2f(config.screenWidth, config.screenHeight);
 	if (debugInfo)
 	{
-#ifdef USE_SFML2
-		const auto settings = window->getSettings();
-
-		ImGui::SetNextWindowPos(ImVec2(150, 0), ImGuiCond_Always);
-		ImGui::Begin("Debug Info");
-		ImGui::Text("OpenGL version: %d.%d", settings.majorVersion, settings.minorVersion);
-		ImGui::Text("AA level: %d", settings.antialiasingLevel);
-		ImGui::Text("Depth bits: %d", settings.depthBits);
-		ImGui::Text("Stencil bits: %d", settings.stencilBits);
-		ImGui::Text("FPS: %4.0f", 1.0f / GetDeltaTime());
-		ImGui::End();
-#endif
 #ifdef USE_SDL2
 
 		int majorVersion = 0, minorVersion = 0;
@@ -386,9 +293,6 @@ void Engine::UpdateUi()
 
 float Engine::GetDeltaTime()
 {
-#ifdef USE_SFML2
-	return dt.asSeconds();
-#endif
 #ifdef USE_SDL2
 	return dt;
 #endif
@@ -396,9 +300,6 @@ float Engine::GetDeltaTime()
 
 float Engine::GetTimeSinceInit()
 {
-#ifdef USE_SFML2
-	return engineClock.getElapsedTime().asSeconds();
-#endif
 #ifdef USE_SDL2
 	return std::chrono::duration_cast<ms>(previousFrameTime - engineStartTime).count() / 1000.f;
 #endif
@@ -431,12 +332,5 @@ InputManager& Engine::GetInputManager()
 {
 	return inputManager;
 }
-
-#ifdef USE_SFML2
-sf::RenderWindow* Engine::GetWindow()
-{
-	return window;
-}
-#endif
 
 

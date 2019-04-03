@@ -105,7 +105,7 @@ void HelloStencilDrawingProgram::Init()
 	shaders.push_back(&floorShaderProgram);
 	cubeShaderProgram.Init("shaders/11_hello_stencil/cube.vert", "shaders/11_hello_stencil/cube.frag");
 	floorShaderProgram.Init("shaders/11_hello_stencil/floor.vert", "shaders/11_hello_stencil/floor.frag");
-	textureWall = gliCreateTexture("data/sprites/wall.dds");
+	textureWall = stbCreateTexture("data/sprites/wall.jpg");
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &cubeVBO);
 

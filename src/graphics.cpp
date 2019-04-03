@@ -7,14 +7,11 @@
 #include <GLES2/gl2.h>
 #include "emscripten.h"
 #endif
-#ifdef USE_SFML2
-#include <SFML/OpenGL.hpp>
-#include "stb_image/stb_image.h"
-#endif
+
 #ifdef USE_SDL2
 #include <SDL_opengl.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image/stb_image.h"
+#include "stb_image.h"
 #endif
 
 #include <gli/gli.hpp>
