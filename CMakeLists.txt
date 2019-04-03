@@ -27,6 +27,7 @@ if(MSVC)
         $<$<CONFIG:Release>:/MT> #--|
 		$<$<CONFIG:RelWithDebInfo>:/MT>
     )
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /Oi")
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
@@ -91,7 +92,7 @@ if(USE_SDL2)
 		include_directories(${OPENGL_INCLUDE_DIR})
 		LIST(APPEND SFGE_LIBRARIES
 				${OPENGL_LIBRARIES})
-				
+			message("OpenGL Libraries: ${OPENGL_LIBRARIES}")
 		#glew
 		set(GLEW_DIR ${EXTERNAL_DIR}/glew)
 		add_compile_definitions(GLEW_STATIC)
@@ -202,6 +203,9 @@ foreach(course_file ${COURSE_FILES} )
 	IF(UNIX)
 		set_target_properties(${course_name} PROPERTIES COMPILE_FLAGS "-save-temps -ffast-math")
 	ENDIF(UNIX)
+	if(MSVC)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2 /Oi")
+	endif(MSVC)
 	set_target_properties (${course_name} PROPERTIES
     FOLDER Courses)
   IF(USE_EMSCRIPTEN)
