@@ -7,6 +7,7 @@ uniform vec3 viewPos;
 
 in vec3 FragPos;
 in vec3 Normal;
+
 struct Material {
     vec3 ambient;
     vec3 diffuse;

@@ -140,6 +140,16 @@ void  Shader::SetMat4(const std::string &name, const glm::mat4 &mat) const
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
+void Shader::SetBasicMaterial(const BasicMaterial& basicMaterial)
+{
+	
+	SetVec3("material.ambient", basicMaterial.ambient);
+	SetVec3("material.diffuse", basicMaterial.diffuse);
+	SetVec3("material.specular", basicMaterial.specular);
+	SetFloat("material.shininess", basicMaterial.shininess);
+	
+}
+
 unsigned gliCreateTexture(char const* filename)
 {
 #ifndef USE_EMSCRIPTEN

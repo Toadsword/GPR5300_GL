@@ -220,7 +220,7 @@ void HelloLightCastersDrawingProgram::Draw()
 	
 		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &camera.Position[0]);
 		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.direction"), 1, &camera.Front[0]);
-		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.cutOff"), glm::cos(glm::radians(12.5f)));
+		glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.cutOff"), glm::cos(glm::radians(12.5f)));//cos(phi) // phi: max engels
 		break;
 	case LightType::SPOT:
 		glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &camera.Position[0]);

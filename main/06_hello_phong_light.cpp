@@ -142,7 +142,7 @@ void HelloLightDrawingProgram::Draw()
 	glEnable(GL_DEPTH_TEST);
 
 	objShaderProgram.Bind();
-	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "ambientStrength"), ambientStrength);
+	objShaderProgram.SetFloat("ambientStrength", ambientStrength);
 	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "specularStrength"), specularStrength);
 	objShaderProgram.SetFloat("diffuseStrength", diffuseStrength);
 	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "objectColor"), 1, objectColor);
@@ -193,24 +193,6 @@ void HelloLightDrawingProgram::ProcessInput()
 	auto& inputManager = engine->GetInputManager();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
-#ifdef USE_SFML2
-	if (inputManager.GetButton(sf::Keyboard::W))
-	{
-		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(sf::Keyboard::S))
-	{
-		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(sf::Keyboard::A))
-	{
-		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(sf::Keyboard::D))
-	{
-		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
-	}
-#endif
 
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))
@@ -251,6 +233,7 @@ void HelloLightDrawingProgram::UpdateUi()
 	ImGui::InputFloat("ambientStrength", &ambientStrength);
 	ImGui::InputFloat("diffuseStrength", &diffuseStrength);
 	ImGui::InputFloat("specularStrength", &specularStrength);
+	ImGui::InputInt("specularPow", &specularPow);
 	ImGui::ColorEdit3("objectColor", objectColor);
 	ImGui::ColorEdit3("lightColor", lightColor);
 }

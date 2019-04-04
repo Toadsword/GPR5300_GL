@@ -24,7 +24,7 @@ void main()
 
 	vec3 viewDir = normalize(viewPos - FragPos);
 	vec3 reflectDir = reflect(-lightDir, norm);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), specularPow);
+	float spec = pow(max(diff*dot(viewDir, reflectDir), 0.0), specularPow);
 	vec3 specular = specularStrength * spec * lightColor;
 
 	vec3 result = (ambient + diffuse + specular) * objectColor;

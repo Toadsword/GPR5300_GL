@@ -14,8 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 const float pixelPerUnit = 100.0f;
-//#define ORTHOGRAPHIC
-#define CAMERA_CONTROLS
+#define USE_STENCIL
 
 class HelloStencilDrawingProgram : public DrawingProgram
 {
@@ -173,6 +172,7 @@ void HelloStencilDrawingProgram::Draw()
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
 	glBindVertexArray(0);
+#ifdef USE_STENCIL
 	glEnable(GL_STENCIL_TEST);
 
 	
@@ -182,6 +182,7 @@ void HelloStencilDrawingProgram::Draw()
 	glStencilMask(0xFF); // Write to stencil buffer
 	glDepthMask(GL_FALSE); // Don't write to depth buffer
 	glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
+#endif
 	floorShaderProgram.Bind();
 
 	viewLoc = glGetUniformLocation(floorShaderProgram.GetProgram(), "view");
@@ -202,11 +203,13 @@ void HelloStencilDrawingProgram::Draw()
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	
 	// Draw cube reflection
-	
+#ifdef USE_STENCIL
 	glStencilFunc(GL_EQUAL, 1, 0xFF); // Pass test if stencil value is 1
 	glStencilMask(0x00); // Don't write anything to stencil buffer
 	glDepthMask(GL_TRUE); // Write to depth buffer
 
+	
+#endif
 	model = glm::scale(
 		glm::translate(model, glm::vec3(0, 0, -1)),
 		glm::vec3(1, 1, -1)
@@ -217,7 +220,9 @@ void HelloStencilDrawingProgram::Draw()
 	glUniform3f(glGetUniformLocation(cubeShaderProgram.GetProgram(), "overrideColor"), 0.3f, 0.3f, 0.3f);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	glUniform3f(glGetUniformLocation(cubeShaderProgram.GetProgram(), "overrideColor"), 1.0f, 1.0f, 1.0f);
+#ifdef USE_STENCIL
 	glDisable(GL_STENCIL_TEST);
+#endif
 }
 
 void HelloStencilDrawingProgram::Destroy()
@@ -232,24 +237,6 @@ void HelloStencilDrawingProgram::ProcessInput()
 	auto& inputManager = engine->GetInputManager();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
-#ifdef USE_SFML2
-	if (inputManager.GetButton(sf::Keyboard::W))
-	{
-		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(sf::Keyboard::S))
-	{
-		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(sf::Keyboard::A))
-	{
-		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(sf::Keyboard::D))
-	{
-		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
-	}
-#endif
 
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))

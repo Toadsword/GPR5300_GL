@@ -29,9 +29,9 @@ void main()
     // ambient
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
 	vec3 lightDir = normalize(light.position - FragPos);
-  	float theta = dot(lightDir, normalize(-light.direction));
+  	float cosTheta = dot(lightDir, normalize(-light.direction));
     
-	if(theta > light.cutOff) 
+	if(cosTheta > light.cutOff) 
 	{       
 		// diffuse 
 		vec3 norm = normalize(Normal);

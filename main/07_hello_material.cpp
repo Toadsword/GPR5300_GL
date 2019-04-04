@@ -96,6 +96,16 @@ private:
 	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 	float lastX = 0;
 	float lastY = 0;
+
+	
+	BasicMaterial material =
+	{
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(1.0f, 0.5f, 0.31f),
+		glm::vec3(0.5f, 0.5f, 0.5f),
+		32.0f
+	};
+
 };
 
 void HelloLightCastersDrawingProgram::Init()
@@ -156,10 +166,7 @@ void HelloLightCastersDrawingProgram::Draw()
 	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "objectColor"), 1.0f, 0.5f, 0.31f);
 	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "viewPos"), 1, &camera.Position[0]);
 	//matrerial parameters
-	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "material.ambient"), 1.0f, 0.5f, 0.31f);
-	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "material.diffuse"), 1.0f, 0.5f, 0.31f);
-	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "material.specular"), 0.5f, 0.5f, 0.5f);
-	glUniform1f(glGetUniformLocation(objShaderProgram.GetProgram(), "material.shininess"), 32.0f);
+	objShaderProgram.SetBasicMaterial(material);
 	//light parameter
 	glUniform3fv(glGetUniformLocation(objShaderProgram.GetProgram(), "light.position"), 1, &lightPos[0]);
 	glUniform3f(glGetUniformLocation(objShaderProgram.GetProgram(), "light.ambient"), 0.2f, 0.2f, 0.2f);

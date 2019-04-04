@@ -5,6 +5,14 @@
 #include <glm/mat4x4.hpp>
 
 
+struct BasicMaterial
+{
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+	float shininess;
+};
+
 class Shader
 {
 public:
@@ -23,6 +31,7 @@ public:
 	void SetMat2(const std::string &name, const glm::mat2 &mat) const;
 	void SetMat3(const std::string &name, const glm::mat3 &mat) const;
 	void SetMat4(const std::string &name, const glm::mat4 &mat) const;
+	void SetBasicMaterial(const BasicMaterial& basicMaterial);
 private:
 	int shaderProgram = 0;
 };
