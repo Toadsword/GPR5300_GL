@@ -16,6 +16,7 @@ set(EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/externals)
 include_directories(include ${CMAKE_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SRC src/*.cpp include/*.h)
+file(GLOB CMN_SHADERS shaders/*.vert shaders/*.frag)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
 
@@ -34,39 +35,11 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
   set(USE_SDL2 ON CACHE BOOL  "Use SDL2")
   set(USE_EMSCRIPTEN true)
-  set(USE_SFML2 OFF CACHE BOOL  "Compile for SFML2")
 
 else()
 #include either SFML2 or SDL2
   set(USE_SDL2 ON CACHE BOOL  "Use SDL2")
   set(USE_EMSCRIPTEN false)
-  set(USE_SFML2 OFF CACHE BOOL  "Compile for SFML2")
-endif()
-
-if(USE_SFML2)
-set(USE_SDL2 OFF)
-endif()
-
-if(USE_SFML2)
-
-	#SFML
-	set(SFML_DIR "${EXTERNAL_DIR}/SFML")
-	set(SFML_BUILD_EXAMPLES FALSE)
-	set(BUILD_SHARED_LIBS FALSE)
-	set(SFML_STATIC_LIBRARIES TRUE)
-	add_subdirectory(${SFML_DIR})
-	include_directories(${SFML_DIR}/include ${SFML_DIR}/src)
-
-	LIST(APPEND SFGE_LIBRARIES
-			sfml-graphics sfml-window sfml-system)
-
-	#glew
-	set(GLEW_DIR ${EXTERNAL_DIR}/glew)
-	add_compile_definitions(GLEW_STATIC)
-	include_directories(${GLEW_DIR}/include)
-	add_subdirectory(${GLEW_DIR})
-	LIST(APPEND SFGE_LIBRARIES
-			glew)
 endif()
 
 if(USE_SDL2)
@@ -90,7 +63,7 @@ if(USE_SDL2)
 		include_directories(${OPENGL_INCLUDE_DIR})
 		LIST(APPEND SFGE_LIBRARIES
 				${OPENGL_LIBRARIES})
-				
+			message("OpenGL Libraries: ${OPENGL_LIBRARIES}")
 		#glew
 		set(GLEW_DIR ${EXTERNAL_DIR}/glew)
 		add_compile_definitions(GLEW_STATIC)
@@ -104,6 +77,17 @@ if(USE_SDL2)
 	endif()
 	
 endif()
+#assimp
+set(BUILD_SHARED_LIBS FALSE CACHE INTERNAL "")
+set(ASSIMP_BUILD_ASSIMP_TOOLS FALSE CACHE INTERNAL "")
+set(ASSIMP_BUILD_SAMPLES FALSE CACHE INTERNAL "")
+set(ASSIMP_BUILD_TESTS FALSE CACHE INTERNAL "")
+set(ASSIMP_NO_EXPORT TRUE CACHE INTERNAL "")
+set(ASSIMP_DIR ${EXTERNAL_DIR}/assimp)
+include_directories(${ASSIMP_DIR}/include ${CMAKE_BINARY_DIR}/externals/assimp/include)
+add_subdirectory(${ASSIMP_DIR})
+LIST(APPEND SFGE_LIBRARIES
+			assimp)
 #gli
 set(GLI_DIR ${EXTERNAL_DIR}/gli)
 IF(NOT EXISTS ${GLI_DIR})
@@ -151,7 +135,7 @@ LIST(APPEND SFGE_LIBRARIES Remotery)
 endif()
 #COMMON
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
-add_library(COMMON ${SRC})
+add_library(COMMON ${SRC} ${CMN_SHADERS})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})
 set_property(TARGET COMMON PROPERTY CXX_STANDARD 17)
 
@@ -174,7 +158,7 @@ add_custom_command(TARGET COMMON POST_BUILD
 file(COPY data/ DESTINATION ${CMAKE_BINARY_DIR}/data/)
 file(COPY shaders/ DESTINATION ${CMAKE_BINARY_DIR}/shaders/)
 #SFGE COURSES
-SET(SFGE_COURSE_DIR ${CMAKE_SOURCE_DIR}/tests)
+SET(SFGE_COURSE_DIR ${CMAKE_SOURCE_DIR}/main)
 file(GLOB COURSE_FILES ${SFGE_COURSE_DIR}/*.cpp )
 foreach(course_file ${COURSE_FILES} )
     # I used a simple string replace, to cut off .cpp.
@@ -198,7 +182,7 @@ foreach(course_file ${COURSE_FILES} )
   add_custom_command(TARGET ${course_name} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders)
-add_custom_command(TARGET ${course_name} POST_BUILD
+  add_custom_command(TARGET ${course_name} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
 endforeach()
