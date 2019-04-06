@@ -1,6 +1,8 @@
 #include <file_utility.h>
 #include <fstream>
 #include <iostream>
+#include <ostream>
+
 
 const std::string LoadFile(std::string path)
 {
