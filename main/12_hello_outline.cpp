@@ -35,7 +35,7 @@ private:
 	float lastX = 0;
 	float lastY = 0;
 
-	float outlineMoveScale = 0.3f;
+	float outlineMoveScale = 0.1f;
 	float outlineColor[3] = { 1.0f,1.0f,1.0f };
 };
 

@@ -55,4 +55,4 @@ protected:
 
 
 unsigned int gliCreateTexture(char const* filename);
-unsigned int stbCreateTexture(const char* filename, bool smooth = true, bool mipMaps = true);
+unsigned int stbCreateTexture(const char* filename, bool smooth = true, bool mipMaps = true, bool clampWrap=false);
