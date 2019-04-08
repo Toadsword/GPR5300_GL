@@ -111,6 +111,12 @@ void  Shader::SetVec3(const std::string &name, const glm::vec3 &value) const
 {
 	glUniform3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, &value[0]);
 }
+
+void Shader::SetVec3(const std::string& name, const float value[3]) const
+{
+	glUniform3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, value);
+}
+
 void  Shader::SetVec3(const std::string &name, float x, float y, float z) const
 {
 	glUniform3f(glGetUniformLocation(shaderProgram, name.c_str()), x, y, z);
@@ -272,7 +278,7 @@ unsigned gliCreateTexture(char const* filename)
 	return 0;
 }
 
-unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps)
+unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool clampWrap)
 {
 	std::string extension = GetFilenameExtension(filename);
 	int width, height, nrChannels;
@@ -293,8 +299,8 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps)
 	glGenTextures(1, &texture);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth?GL_LINEAR:GL_NEAREST);
 	if(mipMaps)
 	{
