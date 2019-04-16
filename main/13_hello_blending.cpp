@@ -7,9 +7,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "camera.h"
 
-//#define TRANSPARENT
-//#define BLENDING
-//#define ORDER
+#define TRANSPARENT
+#define BLENDING
+#define ORDER
 
 class HelloBlendingDrawingProgram : public DrawingProgram
 {

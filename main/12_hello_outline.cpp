@@ -92,7 +92,7 @@ void HelloOutlineDrawingProgram::Draw()
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	modelShaderProgram.SetMat4("model", model);
 	this->model.Draw(modelShaderProgram);
-	glStencilMask(0xFF); // disable writing to the stencil buffer
+	//glStencilMask(0xFF); // disable writing to the stencil buffer
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 	glStencilMask(0x00); // disable writing to the stencil buffer
 	glDisable(GL_DEPTH_TEST);
