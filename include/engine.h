@@ -18,7 +18,7 @@
 #include <input.h>
 
 class DrawingProgram;
-
+struct Remotery;
 
 #ifdef USE_SDL2
 typedef SDL_Color Color;
@@ -73,7 +73,7 @@ private:
 	std::vector<DrawingProgram*> drawingPrograms;
 	InputManager inputManager;
 	Configuration configuration;
-
+	Remotery* rmt;
 	int selectedDrawingProgram = -1;
 	bool wireframeMode = false;
 	bool debugInfo = true;

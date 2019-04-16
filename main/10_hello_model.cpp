@@ -61,7 +61,7 @@ void HelloOutlineDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 
 	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_CULL_FACE);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 	modelShaderProgram.Bind();

@@ -131,8 +131,10 @@ if(NOT USE_EMSCRIPTEN)
 set(REMOTERY_DIR ${EXTERNAL_DIR}/Remotery)
 add_subdirectory(${REMOTERY_DIR})
 include_directories(${REMOTERY_DIR})
+
 LIST(APPEND SFGE_LIBRARIES Remotery)
 endif()
+
 #COMMON
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
 add_library(COMMON ${SRC} ${CMN_SHADERS})

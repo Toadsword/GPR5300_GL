@@ -4,11 +4,6 @@
 #include <GL/glew.h>
 #include <engine.h>
 #include <graphics.h>
-#ifdef USE_SFML2
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/OpenGL.hpp>
-#include "imgui-SFML.h"
-#endif
 #ifdef USE_EMSCRIPTEN
 #include <emscripten.h> 
 #endif
@@ -16,6 +11,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
+#include <Remotery.h>
 
 Engine* Engine::enginePtr = nullptr;
 
@@ -37,6 +33,8 @@ Engine::~Engine()
 
 void Engine::Init()
 {
+
+	rmt_CreateGlobalInstance(&rmt);
 #ifdef USE_SDL2
 	SDL_Init(SDL_INIT_VIDEO);
 	// Set our OpenGL version.
@@ -112,6 +110,8 @@ void Engine::Init()
 
 void Engine::Loop()
 {
+	rmt_ScopedOpenGLSample(EngineLoopGPU);
+	rmt_ScopedCPUSample(EngineLoopCPU, 0);
 	std::chrono::high_resolution_clock::time_point currentFrame = timer.now();
 
 	dt = std::chrono::duration_cast<ms>(currentFrame - previousFrameTime).count() / 1000.0f;
@@ -173,6 +173,8 @@ void Engine::Loop()
 	}
 	if (enableImGui)
 	{
+		rmt_ScopedOpenGLSample(RenderImGuiGPU);
+		rmt_ScopedCPUSample(RenderImGuiCPU, 0);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
@@ -182,6 +184,7 @@ void Engine::Loop()
 
 void Engine::GameLoop()
 {
+	rmt_BindOpenGL();
 	running = true;
 	engineStartTime = timer.now();
 	previousFrameTime = engineStartTime;
@@ -195,7 +198,6 @@ void Engine::GameLoop()
 		Loop();
 	}
 #endif
-
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
@@ -207,10 +209,14 @@ void Engine::GameLoop()
 
 	// Shutdown SDL 2
 	SDL_Quit();
+
+
 }
 #endif
 void Engine::UpdateUi()
 {
+	rmt_ScopedOpenGLSample(DrawImGuiGPU);
+	rmt_ScopedCPUSample(DrawImGuiCPU, 0);
 	auto& config = GetConfiguration();
 	const auto windowSize = Vec2f(config.screenWidth, config.screenHeight);
 	if (debugInfo)
