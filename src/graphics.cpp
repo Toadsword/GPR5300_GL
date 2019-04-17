@@ -111,6 +111,12 @@ void  Shader::SetVec3(const std::string &name, const glm::vec3 &value) const
 {
 	glUniform3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, &value[0]);
 }
+
+void Shader::SetVec3(const std::string& name, const float value[3]) const
+{
+	glUniform3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, value);
+}
+
 void  Shader::SetVec3(const std::string &name, float x, float y, float z) const
 {
 	glUniform3f(glGetUniformLocation(shaderProgram, name.c_str()), x, y, z);
@@ -272,13 +278,13 @@ unsigned gliCreateTexture(char const* filename)
 	return 0;
 }
 
-unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps)
+unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool clampWrap)
 {
 	std::string extension = GetFilenameExtension(filename);
 	int width, height, nrChannels;
 
 	int reqComponents = 0;
-	if (extension == ".jpg")
+	if (extension == ".jpg" || extension == ".tga")
 		reqComponents = 3;
 	else if (extension == ".png")
 		reqComponents = 4;
@@ -293,8 +299,8 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps)
 	glGenTextures(1, &texture);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth?GL_LINEAR:GL_NEAREST);
 	if(mipMaps)
 	{
@@ -319,6 +325,38 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps)
 
 	stbi_image_free(data);
 	return texture;
+}
+
+unsigned LoadCubemap(std::vector<std::string>& faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cerr << "[Error] Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
 }
 
 const std::string& DrawingProgram::GetProgramName()
