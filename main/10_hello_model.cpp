@@ -25,7 +25,6 @@ private:
 	Shader modelShaderProgram;
 
 
-	unsigned int VBO = 0, cubeVAO = 0;
 
 	Model model;
 
@@ -47,7 +46,7 @@ void HelloLightDrawingProgram::Init()
 		"shaders/10_hello_model/model.vert",
 		"shaders/10_hello_model/model.frag");
 	shaders.push_back(&modelShaderProgram);
-	// "data/models/nanosuit/scene.fbx"
+	// "data/models/nanosuit2/nanosuit.obj"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
 	model.Init("data/models/nanosuit2/nanosuit.obj");
@@ -77,6 +76,7 @@ void HelloLightDrawingProgram::Draw()
 
 	const int modelLoc = glGetUniformLocation(modelShaderProgram.GetProgram(), "model");
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	
 	this->model.Draw(modelShaderProgram);
 
 }
