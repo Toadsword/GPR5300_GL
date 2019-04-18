@@ -4,17 +4,6 @@
 #include <vector>
 #include <string>
 
-#ifdef USE_SFML2
-
-
-#include <GL/glew.h>
-#include <SFML/OpenGL.hpp>
-
-#include <SFML/Window.hpp>
-#include <SFML/Graphics/RenderTarget.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
-#endif
-
 #ifdef USE_SDL2
 
 #include <GL/glew.h>
@@ -29,10 +18,7 @@
 #include <input.h>
 
 class DrawingProgram;
-
-#ifdef USE_SFML2
-typedef sf::Color Color;
-#endif
+struct Remotery;
 
 #ifdef USE_SDL2
 typedef SDL_Color Color;
@@ -43,7 +29,7 @@ struct Configuration
 {
 	unsigned int screenWidth = 800;
 	unsigned int screenHeight = 600;
-
+	int vsync = 0;
 	Color bgColor = {0,0,0,0};
 
 	std::string windowName = "OpenGL";
@@ -64,9 +50,6 @@ public:
 
 	Configuration& GetConfiguration();
 	InputManager& GetInputManager();
-#ifdef USE_SFML2
-	sf::RenderWindow* GetWindow();
-#endif
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
 
 
@@ -75,14 +58,6 @@ private:
 	void SwitchWireframeMode();
 	static Engine* enginePtr;
 
-#ifdef USE_SFML2
-	sf::RenderWindow* window = nullptr;
-	sf::Clock deltaClock;
-	sf::Clock engineClock;
-	sf::Time dt;
-
-	const sf::Keyboard::Key imguiKey = static_cast<sf::Keyboard::Key>(52);
-#endif
 
 #ifdef USE_SDL2
 
@@ -98,7 +73,7 @@ private:
 	std::vector<DrawingProgram*> drawingPrograms;
 	InputManager inputManager;
 	Configuration configuration;
-
+	Remotery* rmt;
 	int selectedDrawingProgram = -1;
 	bool wireframeMode = false;
 	bool debugInfo = true;

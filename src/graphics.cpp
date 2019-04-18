@@ -7,15 +7,19 @@
 #include <GLES2/gl2.h>
 #include "emscripten.h"
 #endif
-#ifdef USE_SFML2
-#include <SFML/OpenGL.hpp>
-#endif
+
 #ifdef USE_SDL2
 #include <SDL_opengl.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #endif
 
 #include <gli/gli.hpp>
 #include <glm/glm.hpp>
+
+#include <glm/vec3.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "file_utility.h"
 
 void Shader::Init(std::string vertexShaderPath, std::string fragmentShaderPath)
@@ -77,7 +81,82 @@ int Shader::GetProgram()
 	return shaderProgram;
 }
 
-unsigned CreateTexture(char const* filename)
+
+void Shader::SetBool(const std::string& attributeName, bool value) const
+{
+	glUniform1i(glGetUniformLocation(shaderProgram, attributeName.c_str()), (int)value);
+}
+
+void Shader::SetInt(const std::string& attributeName, int value) const
+{
+	glUniform1i(glGetUniformLocation(shaderProgram, attributeName.c_str()), value);
+}
+
+void Shader::SetFloat(const std::string& attributeName, float value) const
+{
+	glUniform1f(glGetUniformLocation(shaderProgram, attributeName.c_str()), value);
+}
+
+// ------------------------------------------------------------------------
+void  Shader::SetVec2(const std::string &name, const glm::vec2 &value) const
+{
+	glUniform2fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, &value[0]);
+}
+void  Shader::SetVec2(const std::string &name, float x, float y) const
+{
+	glUniform2f(glGetUniformLocation(shaderProgram, name.c_str()), x, y);
+}
+// ------------------------------------------------------------------------
+void  Shader::SetVec3(const std::string &name, const glm::vec3 &value) const
+{
+	glUniform3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, &value[0]);
+}
+
+void Shader::SetVec3(const std::string& name, const float value[3]) const
+{
+	glUniform3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, value);
+}
+
+void  Shader::SetVec3(const std::string &name, float x, float y, float z) const
+{
+	glUniform3f(glGetUniformLocation(shaderProgram, name.c_str()), x, y, z);
+}
+// ------------------------------------------------------------------------
+void  Shader::SetVec4(const std::string &name, const glm::vec4 &value) const
+{
+	glUniform4fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, &value[0]);
+}
+void  Shader::SetVec4(const std::string &name, float x, float y, float z, float w)
+{
+	glUniform4f(glGetUniformLocation(shaderProgram, name.c_str()), x, y, z, w);
+}
+// ------------------------------------------------------------------------
+void  Shader::SetMat2(const std::string &name, const glm::mat2 &mat) const
+{
+	glUniformMatrix2fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+// ------------------------------------------------------------------------
+void  Shader::SetMat3(const std::string &name, const glm::mat3 &mat) const
+{
+	glUniformMatrix3fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+// ------------------------------------------------------------------------
+void  Shader::SetMat4(const std::string &name, const glm::mat4 &mat) const
+{
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+}
+
+void Shader::SetBasicMaterial(const BasicMaterial& basicMaterial)
+{
+	
+	SetVec3("material.ambient", basicMaterial.ambient);
+	SetVec3("material.diffuse", basicMaterial.diffuse);
+	SetVec3("material.specular", basicMaterial.specular);
+	SetFloat("material.shininess", basicMaterial.shininess);
+	
+}
+
+unsigned gliCreateTexture(char const* filename)
 {
 #ifndef USE_EMSCRIPTEN
 	gli::texture Texture = gli::load(filename);
@@ -197,6 +276,87 @@ unsigned CreateTexture(char const* filename)
 	return TextureName;
 #endif
 	return 0;
+}
+
+unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool clampWrap)
+{
+	std::string extension = GetFilenameExtension(filename);
+	int width, height, nrChannels;
+
+	int reqComponents = 0;
+	if (extension == ".jpg" || extension == ".tga")
+		reqComponents = 3;
+	else if (extension == ".png")
+		reqComponents = 4;
+
+	unsigned char *data = stbi_load(filename, &width, &height, &nrChannels, reqComponents);
+	if (data == nullptr)
+	{
+		std::cerr << "[Error] Texture: cannot load " << filename << "\n";
+		return 0;
+	}
+	unsigned int texture;
+	glGenTextures(1, &texture);
+
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth?GL_LINEAR:GL_NEAREST);
+	if(mipMaps)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
+	}
+	if (extension == ".jpg")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	}
+	else if (extension == ".png")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
+	if (mipMaps)
+	{
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+
+	stbi_image_free(data);
+	return texture;
+}
+
+unsigned LoadCubemap(std::vector<std::string>& faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cerr << "[Error] Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
 }
 
 const std::string& DrawingProgram::GetProgramName()
