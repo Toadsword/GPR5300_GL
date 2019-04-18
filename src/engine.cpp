@@ -61,7 +61,6 @@ void Engine::Init()
 	// 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
-
 	// Turn on double buffering with a 24bit Z buffer.
 	// You may need to change this to 16 or 32 for your system
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
@@ -89,15 +88,16 @@ void Engine::Init()
 
 
 	glContext = SDL_GL_CreateContext(window);
-#ifdef _DEBUG
-	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(MessageCallback, 0);
-#endif
+
 	const GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
 		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
 	}
+#ifdef _DEBUG
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(MessageCallback, 0);
+#endif
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
