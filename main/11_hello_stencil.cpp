@@ -153,7 +153,7 @@ void HelloStencilDrawingProgram::Draw()
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 
-
+	//Draw upper cube
 	cubeShaderProgram.Bind();
 	int viewLoc = glGetUniformLocation(cubeShaderProgram.GetProgram(), "view");
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));

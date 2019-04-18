@@ -9,7 +9,7 @@
 
 #define TRANSPARENT
 #define BLENDING
-#define ORDER
+//#define ORDER
 
 class HelloBlendingDrawingProgram : public DrawingProgram
 {
@@ -63,9 +63,16 @@ private:
 
 	glm::vec3 windowPositions [windowNmb] =
 	{
-		glm::vec3(-1., 0.0,-1.0),
+		glm::vec3(-1., 0.0,-3.0),
 		glm::vec3(-1., 0.0,-3.0),
 		glm::vec3(1., 0.0, -2.0),
+	};
+
+	float windowAngles [windowNmb] =
+	{
+		glm::radians(45.0f),
+		glm::radians(-45.0f),
+		0.0f
 	};
 
 };
@@ -82,7 +89,7 @@ void HelloBlendingDrawingProgram::Init()
 #ifdef BLENDING
 	windowShaderProgram.Init(
 		"shaders/13_hello_blending/quad.vert",
-		"shaders/13_hello_blending/quad.frag");
+		"shaders/13_hello_blending/full_transparent.frag");
 #else
 
 #ifdef TRANSPARENT
@@ -186,11 +193,13 @@ void HelloBlendingDrawingProgram::Draw()
 	{
 		auto windowPosition = it->second;
 #else
-	for (auto windowPosition : windowPositions)
+	for (int i = 0; i < windowNmb;i++)
 	{
+		auto windowPosition = windowPositions[i];
 #endif
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, windowPosition);
+		model = glm::rotate(model, windowAngles[i], glm::vec3(0,1,0));
 		windowShaderProgram.SetMat4("model", model);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
@@ -252,6 +261,7 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Hello Blending";
+	config.bgColor = { 1,1,1 };
 
 	engine.AddDrawingProgram(new HelloBlendingDrawingProgram());
 

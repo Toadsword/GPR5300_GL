@@ -20,7 +20,8 @@ enum class PostProcessFx
 	Grayscale,
 	Kernel,
 	Blur,
-	EdgeDetection
+	EdgeDetection,
+	DistanceFog
 };
 
 class HelloPostProcessDrawingProgram : public DrawingProgram
@@ -97,13 +98,14 @@ private:
 
 
 	unsigned int texColorBuffer;
+	unsigned int texDepthBuffer;
 	unsigned int framebuffer;
 	unsigned int rbo;
 
 	unsigned int quadVAO, quadVBO;
 	glm::mat4 projection;
 	glm::mat4 view;
-	PostProcessFx postProcessingFx = PostProcessFx::Blur;
+	PostProcessFx postProcessingFx = PostProcessFx::DistanceFog;
 };
 
 void HelloPostProcessDrawingProgram::Init()
@@ -184,6 +186,12 @@ void HelloPostProcessDrawingProgram::Init()
 			"shaders/15_hello_post_processing/edge_detection.frag"
 		);
 		break;
+	case PostProcessFx::DistanceFog:
+		frameBufferShaderProgram.Init(
+			"shaders/15_hello_post_processing/frame.vert",
+			"shaders/15_hello_post_processing/distance_fog.frag"
+		);
+		break;
 	default:
 		break;
 	}
@@ -193,21 +201,37 @@ void HelloPostProcessDrawingProgram::Init()
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	//Generate texture for framebuffer
 	glGenTextures(1, &texColorBuffer);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	// attach it to currently bound framebuffer object
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texColorBuffer, 0);
-	
-	//Render Buffer Object
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, config.screenWidth, config.screenHeight);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	switch(postProcessingFx)
+	{
+	case PostProcessFx::DistanceFog:
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texDepthBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, config.screenWidth, config.screenHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texDepthBuffer, 0);
+		break;
+	default:
+		//Render Buffer Object
+		glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, config.screenWidth, config.screenHeight);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+		break;
+	}
+	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cerr << "[ERROR] Framebuffer is not complete!" << std::endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -215,6 +239,7 @@ void HelloPostProcessDrawingProgram::Init()
 
 void HelloPostProcessDrawingProgram::DrawScene()
 {
+	glActiveTexture(GL_TEXTURE0);
 	Engine* engine = Engine::GetPtr();
 	cubeShaderProgram.Bind();
 	cubeShaderProgram.SetMat4("view", view);
@@ -222,17 +247,18 @@ void HelloPostProcessDrawingProgram::DrawScene()
 
 	glBindTexture(GL_TEXTURE_2D, textureWall);
 	glBindVertexArray(cubeVAO);
+	for (int i = 99; i >= 1; i--)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f*i));
+		cubeShaderProgram.SetMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-1.0f,0.0f,-1.0f));
-	cubeShaderProgram.SetMat4("model", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-
-	model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(1.0f, 0.0f, -1.0f));
-	cubeShaderProgram.SetMat4("model", model);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(1.0f, 0.0f, -1.0f*i));
+		cubeShaderProgram.SetMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 	glBindVertexArray(0);
 }
 
@@ -244,28 +270,32 @@ void HelloPostProcessDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
 	projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 	view = camera.GetViewMatrix();
 	// first pass
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(config.bgColor.r, config.bgColor.g, config.bgColor.b, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
-	glEnable(GL_DEPTH_TEST);
 
 	DrawScene();
 
 	// second pass
 	glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default screen framebuffer
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(config.bgColor.r, config.bgColor.g, config.bgColor.b, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
 
 	frameBufferShaderProgram.Bind();
 	glBindVertexArray(quadVAO);
 	glDisable(GL_DEPTH_TEST);
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
+	if(postProcessingFx == PostProcessFx::DistanceFog)
+	{
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texDepthBuffer);
+	}
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
+	glBindVertexArray(0);
 
 }
 
