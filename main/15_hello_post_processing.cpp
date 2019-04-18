@@ -12,6 +12,7 @@
 #include "camera.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
+#include "imgui.h"
 
 enum class PostProcessFx
 {
@@ -32,6 +33,7 @@ public:
 	void Draw() override;
 	void Destroy() override;
 	void ProcessInput();
+	void UpdateUi() override;
 
 private:
 	Shader frameBufferShaderProgram;
@@ -106,6 +108,8 @@ private:
 	glm::mat4 projection;
 	glm::mat4 view;
 	PostProcessFx postProcessingFx = PostProcessFx::DistanceFog;
+	float fogColor[3] = {0.3f,0.3f,0.3f};
+	float fogZFar = 100.0f;
 };
 
 void HelloPostProcessDrawingProgram::Init()
@@ -201,7 +205,6 @@ void HelloPostProcessDrawingProgram::Init()
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	//Generate texture for framebuffer
 	glGenTextures(1, &texColorBuffer);
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -213,13 +216,14 @@ void HelloPostProcessDrawingProgram::Init()
 	switch(postProcessingFx)
 	{
 	case PostProcessFx::DistanceFog:
-		glActiveTexture(GL_TEXTURE1);
+		glGenTextures(1, &texDepthBuffer);
 		glBindTexture(GL_TEXTURE_2D, texDepthBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, config.screenWidth, config.screenHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, config.screenWidth, config.screenHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texDepthBuffer, 0);
+
 		break;
 	default:
 		//Render Buffer Object
@@ -251,11 +255,13 @@ void HelloPostProcessDrawingProgram::DrawScene()
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(-1.0f, 0.0f, -1.0f*i));
+		model = glm::scale(model, glm::vec3(0.7f, 0.7f, 0.7f));
 		cubeShaderProgram.SetMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(1.0f, 0.0f, -1.0f*i));
+		model = glm::scale(model, glm::vec3(0.7f, 0.7f, 0.7f));
 		cubeShaderProgram.SetMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 	}
@@ -268,13 +274,13 @@ void HelloPostProcessDrawingProgram::Draw()
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
-
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 	view = camera.GetViewMatrix();
 	// first pass
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-	glClearColor(config.bgColor.r, config.bgColor.g, config.bgColor.b, 1.0f);
+	glClearColor(0.0f,0.0f,0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
 
 	DrawScene();
@@ -285,7 +291,12 @@ void HelloPostProcessDrawingProgram::Draw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
 
 	frameBufferShaderProgram.Bind();
-	glBindVertexArray(quadVAO);
+	
+	frameBufferShaderProgram.SetInt("screenTexture", 0);
+	frameBufferShaderProgram.SetInt("depthTexture", 1);
+	frameBufferShaderProgram.SetVec3("fogColor", fogColor);
+	frameBufferShaderProgram.SetFloat("zFar", fogZFar);
+	
 	glDisable(GL_DEPTH_TEST);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texColorBuffer);
@@ -294,6 +305,7 @@ void HelloPostProcessDrawingProgram::Draw()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texDepthBuffer);
 	}
+	glBindVertexArray(quadVAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
 
@@ -342,6 +354,13 @@ void HelloPostProcessDrawingProgram::ProcessInput()
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 
 
+}
+
+void HelloPostProcessDrawingProgram::UpdateUi()
+{
+	ImGui::Separator();
+	ImGui::ColorEdit3("fogColor", fogColor);
+	ImGui::SliderFloat("zFar", &fogZFar, 1.0f, 100.0f);
 }
 
 
