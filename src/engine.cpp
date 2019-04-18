@@ -14,9 +14,10 @@
 #endif
 #include <chrono>
 #include "imgui.h"
+#ifdef USE_SDL2
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
-
+#endif
 Engine* Engine::enginePtr = nullptr;
 
 Engine::Engine()
