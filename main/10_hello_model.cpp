@@ -25,7 +25,6 @@ private:
 	Shader modelShaderProgram;
 
 
-	unsigned int VBO = 0, cubeVAO = 0;
 
 	Model model;
 
@@ -47,7 +46,7 @@ void HelloOutlineDrawingProgram::Init()
 		"shaders/10_hello_model/model.vert",
 		"shaders/10_hello_model/model.frag");
 	shaders.push_back(&modelShaderProgram);
-	// "data/models/nanosuit/scene.fbx"
+	// "data/models/nanosuit2/nanosuit.obj"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
 	model.Init("data/models/nanosuit2/nanosuit.obj");
@@ -61,7 +60,7 @@ void HelloOutlineDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 
 	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_CULL_FACE);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 	modelShaderProgram.Bind();
@@ -77,6 +76,7 @@ void HelloOutlineDrawingProgram::Draw()
 
 	const int modelLoc = glGetUniformLocation(modelShaderProgram.GetProgram(), "model");
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	
 	this->model.Draw(modelShaderProgram);
 
 }

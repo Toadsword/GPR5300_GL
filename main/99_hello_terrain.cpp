@@ -294,7 +294,8 @@ void HelloTerrainDrawingProgram::Destroy()
 	glDeleteBuffers(1, &EBO);
 }
 
-void HelloTerrainDrawingProgram::UpdateUi() {
+void HelloTerrainDrawingProgram::UpdateUi() 
+{
 	DrawingProgram::UpdateUi();
 	ImGui::Separator();
 	ImGui::SliderFloat("Terrain Height Mult", &terrainElevationFactor, -10.0f, 10.0f, "height = %.3f");

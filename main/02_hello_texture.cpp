@@ -2,12 +2,8 @@
 #include <graphics.h>
 #include <GL/glew.h>
 
-#ifdef USE_SFML2
-#include <SFML/OpenGL.hpp>
-#include <SFML/Graphics/Texture.hpp>
-#endif
 
-//#define OTHER_TEXTURE
+#define OTHER_TEXTURE
 
 class HelloTextureDrawingProgram : public DrawingProgram
 {
@@ -41,7 +37,6 @@ private:
 	unsigned int EBO = 0; // Element Buffer Object
 	GLuint textureWall;
 #ifdef OTHER_TEXTURE
-	sf::Texture sfTextureOtherPlay;
 	GLuint textureOtherPlay;
 #endif
 };
@@ -66,8 +61,7 @@ void HelloTextureDrawingProgram::Init()
 	);
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
 #ifdef OTHER_TEXTURE
-	sfTextureOtherPlay.loadFromFile("data/sprites/other_play.png");
-	textureOtherPlay = sfTextureOtherPlay.getNativeHandle();
+	textureOtherPlay = stbCreateTexture("data/sprites/other_play.png");
 #endif
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object
