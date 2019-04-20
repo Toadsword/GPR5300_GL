@@ -48,12 +48,12 @@ void HelloOutlineDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	modelShaderProgram.Init(
-		"shaders/12_hello_outline/model.vert",
-		"shaders/12_hello_outline/model.frag");
-	outlineShaderProgram.Init(
-		"shaders/12_hello_outline/outline.vert",
-		"shaders/12_hello_outline/outline.frag");
+    modelShaderProgram.CompileSource(
+            "shaders/12_hello_outline/model.vert",
+            "shaders/12_hello_outline/model.frag");
+    outlineShaderProgram.CompileSource(
+            "shaders/12_hello_outline/outline.vert",
+            "shaders/12_hello_outline/outline.frag");
 	shaders.push_back(&modelShaderProgram);
 	shaders.push_back(&outlineShaderProgram);
 	// "data/models/nanosuit/scene.fbx"

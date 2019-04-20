@@ -1,10 +1,12 @@
-#version 330 core
+#version 450
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aTexCoord;
 
-out vec2 TexCoord;
-
-uniform mat4 transform;
+layout(location = 2) out vec2 TexCoord;
+layout(set = 0, binding = 0) uniform transformBlock
+{
+    mat4 transform;
+};
 
 void main()
 {

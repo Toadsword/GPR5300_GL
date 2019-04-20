@@ -40,3 +40,22 @@ std::string GetFilenameFromPath(std::string path)
 	
 	return filename;
 }
+
+const BinaryFile LoadBinaryFile(std::string path)
+{
+    std::ifstream shaderFile;
+    shaderFile.open(path, std::ios::binary | std::ios::ate);
+    if (shaderFile.is_open())
+    {
+        size_t size = shaderFile.tellg();
+        shaderFile.seekg(0, std::ios::beg);
+        char* bin = new char[size];
+        shaderFile.read(bin, size);
+        return {bin, size};
+    }
+    else
+    {
+        std::cerr << "Could not open \"" << path << "\"" << std::endl;
+        return {nullptr,0};
+    }
+}

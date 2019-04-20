@@ -87,9 +87,9 @@ void HelloBlendingDrawingProgram::Init()
 	shaders.push_back(&grassShaderProgram);
 	shaders.push_back(&windowShaderProgram);
 #ifdef BLENDING
-	windowShaderProgram.Init(
-		"shaders/13_hello_blending/quad.vert",
-		"shaders/13_hello_blending/full_transparent.frag");
+    windowShaderProgram.CompileSource(
+            "shaders/13_hello_blending/quad.vert",
+            "shaders/13_hello_blending/full_transparent.frag");
 #else
 
 #ifdef TRANSPARENT
@@ -105,9 +105,9 @@ void HelloBlendingDrawingProgram::Init()
 #endif
 
 #ifdef TRANSPARENT
-	grassShaderProgram.Init(
-		"shaders/13_hello_blending/quad.vert",
-		"shaders/13_hello_blending/full_transparent.frag");
+    grassShaderProgram.CompileSource(
+            "shaders/13_hello_blending/quad.vert",
+            "shaders/13_hello_blending/full_transparent.frag");
 #else
 	grassShaderProgram.Init(
 		"shaders/13_hello_blending/quad.vert",

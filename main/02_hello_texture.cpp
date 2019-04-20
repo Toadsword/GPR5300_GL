@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 
 
-#define OTHER_TEXTURE
+//#define OTHER_TEXTURE
 
 class HelloTextureDrawingProgram : public DrawingProgram
 {
@@ -51,14 +51,14 @@ void HelloTextureDrawingProgram::Init()
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
 
-	shaderProgram.Init(
-		"shaders/02_hello_texture/texture.vert",
+    shaderProgram.CompileSource(
+            "shaders/02_hello_texture/texture.vert",
 #ifdef OTHER_TEXTURE
-		"shaders/02_hello_texture/texture_other_fragment.glsl"
+            "shaders/02_hello_texture/texture_other.frag"
 #else
-		"shaders/02_hello_texture/texture.frag"
+            "shaders/02_hello_texture/texture.frag"
 #endif
-	);
+    );
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
 #ifdef OTHER_TEXTURE
 	textureOtherPlay = stbCreateTexture("data/sprites/other_play.png");

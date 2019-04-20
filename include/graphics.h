@@ -16,7 +16,8 @@ struct BasicMaterial
 class Shader
 {
 public:
-	void Init(std::string vertexShaderPath, std::string fragmentShaderPath);
+	void CompileSource(std::string vertexShaderPath, std::string fragmentShaderPath);
+	void CompileSpirV(std::string vertexShaderPath, std::string fragmentShaderPath);
 	void Bind();
 	int GetProgram();
 	void SetBool(const std::string& attributeName, bool value) const;

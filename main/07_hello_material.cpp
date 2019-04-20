@@ -117,12 +117,12 @@ void HelloLightCastersDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	objShaderProgram.Init(
-		"shaders/07_hello_material/material.vert",
-		"shaders/07_hello_material/material.frag");
-	lampShaderProgram.Init(
-		"shaders/07_hello_material/lamp.vert",
-		"shaders/07_hello_material/lamp.frag");
+    objShaderProgram.CompileSource(
+            "shaders/07_hello_material/material.vert",
+            "shaders/07_hello_material/material.frag");
+    lampShaderProgram.CompileSource(
+            "shaders/07_hello_material/lamp.vert",
+            "shaders/07_hello_material/lamp.frag");
 	shaders.push_back(&objShaderProgram);
 	shaders.push_back(&lampShaderProgram);
 

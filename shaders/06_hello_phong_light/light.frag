@@ -1,17 +1,18 @@
-#version 330 core
-out vec4 FragColor;
-
-uniform vec3 objectColor;
-uniform vec3 lightColor;
-uniform float ambientStrength;
-uniform float diffuseStrength;
-uniform float specularStrength;
-uniform int specularPow;
-uniform vec3 lightPos;
-uniform vec3 viewPos;
-
-in vec3 FragPos;
-in vec3 Normal;
+#version 450
+layout(location = 0) out vec4 FragColor;
+layout(set = 0, binding = 0) uniform lightFragBlock
+{
+	vec3 objectColor;
+	vec3 lightColor;
+	float ambientStrength;
+	float diffuseStrength;
+	float specularStrength;
+	int specularPow;
+	vec3 lightPos;
+	vec3 viewPos;
+};
+layout(location = 1) in vec3 FragPos;
+layout(location = 2) in vec3 Normal;
 
 void main()
 {

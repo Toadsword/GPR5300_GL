@@ -2765,7 +2765,7 @@ static void calc(const void* src, const int bytelength, unsigned char* hash)
     int lastBlockBytes;
     int hashByte;
 
-    // Init the result array.
+    // CompileSource the result array.
     unsigned int result[5] = { 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 };
 
     // Cast the void src pointer to be the byte array we can work with.
@@ -2783,7 +2783,7 @@ static void calc(const void* src, const int bytelength, unsigned char* hash)
     {
         endCurrentBlock = currentBlock + 64;
 
-        // Init the round buffer with the 64 byte block data.
+        // CompileSource the round buffer with the 64 byte block data.
         for (roundPos = 0; currentBlock < endCurrentBlock; currentBlock += 4)
         {
             // This line will swap endian on big endian and keep endian on little endian.

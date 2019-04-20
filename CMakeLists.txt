@@ -29,6 +29,42 @@ if(MSVC)
     )
 endif()
 
+if(MSVC)
+	if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+		set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
+	else()
+		set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslangValidator.exe")
+	endif()
+elseif(UNIX)
+	set(GLSL_VALIDATOR "glslangValidator")
+endif()
+
+file(GLOB_RECURSE GLSL_SOURCE_FILES
+		"shaders/*.frag"
+		"shaders/*.vert"
+		)
+
+foreach(GLSL ${GLSL_SOURCE_FILES})
+	get_filename_component(FILE_NAME ${GLSL} NAME)
+	get_filename_component(PATH_NAME ${GLSL} DIRECTORY)
+	file(RELATIVE_PATH PATH_NAME "${PROJECT_SOURCE_DIR}/shaders/" ${PATH_NAME})
+	#MESSAGE("GLSL PATH: ${PATH_NAME} NAME: ${FILE_NAME}")
+	set(SPIRV "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}/${FILE_NAME}.spv")
+	add_custom_command(
+			OUTPUT ${SPIRV}
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}"
+			COMMAND ${GLSL_VALIDATOR} -G ${GLSL} -o ${SPIRV}
+			COMMAND ${CMAKE_COMMAND} -E copy ${GLSL} "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}/${FILE_NAME}"
+			DEPENDS ${GLSL})
+	list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(GLSL)
+
+add_custom_target(
+		Shaders
+		DEPENDS ${SPIRV_BINARY_FILES}
+)
+
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s FULL_ES3=1 --emrun -O2 --preload-file shaders/")
   set(SDL2_LIBRARIES "-s USE_SDL=2 -s FULL_ES3=1 --emrun")
@@ -140,25 +176,18 @@ message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
 add_library(COMMON ${SRC} ${CMN_SHADERS})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})
 set_property(TARGET COMMON PROPERTY CXX_STANDARD 17)
-
+add_dependencies(COMMON Shaders)
 if(USE_SDL2)
 target_compile_definitions(COMMON PUBLIC USE_SDL2=1)
 endif()
 if(USE_EMSCRIPTEN)
 target_compile_definitions(COMMON PUBLIC USE_EMSCRIPTEN=1)
 endif()
-if(USE_SFML2)
-target_compile_definitions(COMMON PUBLIC USE_SFML2=1)
-endif()
 #copy folder to build
-add_custom_command(TARGET COMMON POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders)
 add_custom_command(TARGET COMMON POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)
 file(COPY data/ DESTINATION ${CMAKE_BINARY_DIR}/data/)
-file(COPY shaders/ DESTINATION ${CMAKE_BINARY_DIR}/shaders/)
 #SFGE COURSES
 SET(SFGE_COURSE_DIR ${CMAKE_SOURCE_DIR}/main)
 file(GLOB COURSE_FILES ${SFGE_COURSE_DIR}/*.cpp )
@@ -181,9 +210,6 @@ foreach(course_file ${COURSE_FILES} )
   IF(USE_EMSCRIPTEN)
     target_compile_options(${course_name} PUBLIC --emrun)
   ENDIF()
-  add_custom_command(TARGET ${course_name} POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_SOURCE_DIR}/shaders ${CMAKE_BINARY_DIR}/shaders)
   add_custom_command(TARGET ${course_name} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/data ${CMAKE_BINARY_DIR}/data)

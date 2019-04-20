@@ -85,8 +85,9 @@ void HelloTriangleDrawingProgram::Init()
 #ifdef EBO_DOUBLE_TRIANGLE
 	glGenBuffers(1, &EBO);
 #endif
-	
-	shaderProgram.Init("shaders/01_hello_triangle/triangle.vert", "shaders/01_hello_triangle/triangle.frag");
+
+    shaderProgram.CompileSource("shaders/01_hello_triangle/triangle.vert", "shaders/01_hello_triangle/triangle.frag");
+    //shaderProgram.CompileSpirV("shaders/01_hello_triangle/triangle.vert.spv","shaders/01_hello_triangle/triangle.frag.spv");
 
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object

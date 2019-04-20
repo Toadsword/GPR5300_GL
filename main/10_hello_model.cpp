@@ -42,9 +42,9 @@ void HelloOutlineDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	modelShaderProgram.Init(
-		"shaders/10_hello_model/model.vert",
-		"shaders/10_hello_model/model.frag");
+    modelShaderProgram.CompileSource(
+            "shaders/10_hello_model/model.vert",
+            "shaders/10_hello_model/model.frag");
 	shaders.push_back(&modelShaderProgram);
 	// "data/models/nanosuit2/nanosuit.obj"
 	// "data/models/van_gogh_room/Enter a title.obj"

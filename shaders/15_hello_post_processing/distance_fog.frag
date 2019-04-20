@@ -1,12 +1,12 @@
-#version 330 core
-out vec4 FragColor;
-  
-in vec2 TexCoords;
+#version 450
+layout (location = 0) out vec4 FragColor;
 
-uniform sampler2D screenTexture;
-uniform sampler2D depthTexture;
-uniform vec3 fogColor;
-uniform float zFar;
+layout (location = 1) in vec2 TexCoords;
+
+layout(binding = 0) uniform sampler2D screenTexture;
+layout(binding = 1) uniform sampler2D depthTexture;
+layout(location = 2) uniform vec3 fogColor;
+layout(location = 3) uniform float zFar;
 
 
 float linearize(float depth) {

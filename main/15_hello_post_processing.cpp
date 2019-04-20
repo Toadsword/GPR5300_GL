@@ -117,7 +117,7 @@ void HelloPostProcessDrawingProgram::Init()
 	programName = "Hello Post Processing";
 	
 	//Cube
-	cubeShaderProgram.Init("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
+    cubeShaderProgram.CompileSource("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
 	shaders.push_back(&cubeShaderProgram);
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
 	glGenVertexArrays(1, &cubeVAO);
@@ -155,46 +155,46 @@ void HelloPostProcessDrawingProgram::Init()
 	switch(postProcessingFx)
 	{
 	case PostProcessFx::None:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/frame.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/frame.frag"
+        );
 		break;
 	case PostProcessFx::Inversion:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/inversion.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/inversion.frag"
+        );
 		break;
 	case PostProcessFx::Grayscale:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/grayscale.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/grayscale.frag"
+        );
 		break;
 	case PostProcessFx::Kernel:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/kernel.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/kernel.frag"
+        );
 		break;
 	case PostProcessFx::Blur:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/blur.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/blur.frag"
+        );
 		break;
 	case PostProcessFx::EdgeDetection:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/edge_detection.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/edge_detection.frag"
+        );
 		break;
 	case PostProcessFx::DistanceFog:
-		frameBufferShaderProgram.Init(
-			"shaders/15_hello_post_processing/frame.vert",
-			"shaders/15_hello_post_processing/distance_fog.frag"
-		);
+        frameBufferShaderProgram.CompileSource(
+                "shaders/15_hello_post_processing/frame.vert",
+                "shaders/15_hello_post_processing/distance_fog.frag"
+        );
 		break;
 	default:
 		break;

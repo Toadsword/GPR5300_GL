@@ -22,7 +22,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "file_utility.h"
 
-void Shader::Init(std::string vertexShaderPath, std::string fragmentShaderPath)
+void Shader::CompileSource(std::string vertexShaderPath, std::string fragmentShaderPath)
 {
 	const unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	const auto vertexShaderProgram = LoadFile(vertexShaderPath);
@@ -70,6 +70,69 @@ void Shader::Init(std::string vertexShaderPath, std::string fragmentShaderPath)
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 }
+
+
+void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShaderPath)
+{
+    // Create an empty vertex shader handle
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const auto vertexShaderProgram = LoadBinaryFile(vertexShaderPath);
+    // Apply the vertex shader SPIR-V to the shader object.
+    glShaderBinary(1, &vertexShader, GL_SHADER_BINARY_FORMAT_SPIR_V, vertexShaderProgram.bin, vertexShaderProgram.size);
+
+    // Specialize the vertex shader.
+    //std::string vsEntrypoint = ...; // Get VS entry point name
+    glSpecializeShader(vertexShader, "main", 0, nullptr, nullptr);
+
+    ///Check success status of shader compilation
+    int  success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        return;
+    }
+
+    // Create an empty fragment shader handle
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    const auto fragmentShaderProgram = LoadBinaryFile(fragmentShaderPath);
+    // Apply the fragment shader SPIR-V to the shader object.
+    glShaderBinary(1, &fragmentShader, GL_SHADER_BINARY_FORMAT_SPIR_V, vertexShaderProgram.bin, vertexShaderProgram.size);
+
+    // Specialize the fragment shader.
+    //std::string vsEntrypoint = ...; // Get VS entry point name
+    glSpecializeShader(fragmentShader, "main", 0, nullptr, nullptr);
+
+    ///Check success status of shader compilation
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+        return;
+    }
+
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    //Check if shader program was linked correctly
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
+        return;
+    }
+
+    glDeleteShader(vertexShader);
+    delete[] vertexShaderProgram.bin;
+    glDeleteShader(fragmentShader);
+    delete[] fragmentShaderProgram.bin;
+}
+
 
 void Shader::Bind()
 {

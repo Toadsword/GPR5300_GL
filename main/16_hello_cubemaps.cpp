@@ -69,10 +69,10 @@ void HelloCubemapsDrawingProgram::Init()
 {
 	programName = "Hello Cubemaps";
 
-	cubemapShader.Init(
-		"shaders/16_hello_cubemaps/cubemaps.vert",
-		"shaders/16_hello_cubemaps/cubemaps.frag"
-	);
+    cubemapShader.CompileSource(
+            "shaders/16_hello_cubemaps/cubemaps.vert",
+            "shaders/16_hello_cubemaps/cubemaps.frag"
+    );
 	std::vector<std::string> faces =
 	{
 		"data/skybox/nebula/purplenebula_rt.tga",

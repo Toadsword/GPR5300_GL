@@ -34,7 +34,9 @@ struct Configuration
 
 	std::string windowName = "OpenGL";
 	unsigned int glMajorVersion = 4;
-	unsigned int glMinorVersion = 5;
+	unsigned int glMinorVersion = 5:q
+	        :q
+	        ;
 };
 
 class Engine

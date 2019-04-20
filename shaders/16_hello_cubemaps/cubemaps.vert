@@ -1,10 +1,10 @@
-#version 330 core
+#version 450
 layout (location = 0) in vec3 aPos;
 
-out vec3 TexCoords;
+layout(location = 1) out vec3 TexCoords;
 
-uniform mat4 projection;
-uniform mat4 view;
+layout(location = 2) uniform mat4 projection;
+layout(location = 3) uniform mat4 view;
 
 void main()
 {

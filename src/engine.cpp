@@ -95,10 +95,8 @@ void Engine::Init()
 	{
 		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
 	}
-#ifdef _DEBUG
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(MessageCallback, 0);
-#endif
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -111,7 +109,7 @@ void Engine::Init()
 
 	// Setup Platform/Renderer bindings
 	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-	ImGui_ImplOpenGL3_Init("#version 330 core");
+	ImGui_ImplOpenGL3_Init("#version 450");
 
 	engineStartTime = timer.now();
 	previousFrameTime = engineStartTime;
