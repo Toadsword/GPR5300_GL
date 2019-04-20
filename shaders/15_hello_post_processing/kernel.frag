@@ -1,9 +1,8 @@
-#version 450
+#version 330 core
 layout(location = 0) out vec4 FragColor;
+in vec2 TexCoords;
 
-layout(location = 1) in vec2 TexCoords;
-
-layout(binding = 0) uniform sampler2D screenTexture;
+uniform sampler2D screenTexture;
 const float offset = 1.0 / 300.0;  
 
 void main()

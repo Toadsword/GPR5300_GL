@@ -17,6 +17,16 @@
 
 Engine* Engine::enginePtr = nullptr;
 
+extern "C"
+{
+	__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+}
+
+extern "C"
+{
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
 
 void GLAPIENTRY
 MessageCallback(GLenum source,
@@ -30,6 +40,7 @@ MessageCallback(GLenum source,
 	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
 		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
 		type, severity, message);
+	fflush(stderr);
 }
 
 Engine::Engine()
@@ -95,8 +106,10 @@ void Engine::Init()
 	{
 		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
 	}
+
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(MessageCallback, 0);
+
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

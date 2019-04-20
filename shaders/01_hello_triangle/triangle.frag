@@ -1,8 +1,8 @@
-#version 450
+#version 330 core
 layout(location = 0) out vec4 FragColor;
-layout (location = 2) in vec3 ourColor;
+in vec3 ourColor;
 
-layout(location = 1) uniform float colorCoeff;
+uniform float colorCoeff;
 
 void main()
 {

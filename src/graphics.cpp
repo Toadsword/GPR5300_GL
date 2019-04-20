@@ -84,6 +84,7 @@ void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShad
     //std::string vsEntrypoint = ...; // Get VS entry point name
     glSpecializeShader(vertexShader, "main", 0, nullptr, nullptr);
 
+	delete[] vertexShaderProgram.bin;
     ///Check success status of shader compilation
     int  success;
     char infoLog[512];
@@ -99,7 +100,7 @@ void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShad
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     const auto fragmentShaderProgram = LoadBinaryFile(fragmentShaderPath);
     // Apply the fragment shader SPIR-V to the shader object.
-    glShaderBinary(1, &fragmentShader, GL_SHADER_BINARY_FORMAT_SPIR_V, vertexShaderProgram.bin, vertexShaderProgram.size);
+    glShaderBinary(1, &fragmentShader, GL_SHADER_BINARY_FORMAT_SPIR_V, fragmentShaderProgram.bin, fragmentShaderProgram.size);
 
     // Specialize the fragment shader.
     //std::string vsEntrypoint = ...; // Get VS entry point name
@@ -107,6 +108,7 @@ void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShad
 
     ///Check success status of shader compilation
 
+	delete[] fragmentShaderProgram.bin;
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
@@ -127,10 +129,9 @@ void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShad
         return;
     }
 
-    glDeleteShader(vertexShader);
-    delete[] vertexShaderProgram.bin;
+
+	glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
-    delete[] fragmentShaderProgram.bin;
 }
 
 

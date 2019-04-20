@@ -1,15 +1,14 @@
-#version 450
+#version 330 core
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
 
-layout(set = 0, binding = 0) uniform lightVertBlock
-{
-	mat4 model;
-	mat4 view;
-	mat4 projection;
-};
-layout(location = 2) out vec3 FragPos;
-layout(location = 3) out vec3 Normal;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec3 FragPos;
+out vec3 Normal;
 
 void main()
 {

@@ -40,8 +40,8 @@ elseif(UNIX)
 endif()
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
-		"shaders/*.frag"
-		"shaders/*.vert"
+		"${PROJECT_SOURCE_DIR}/shaders/*.frag"
+		"${PROJECT_SOURCE_DIR}/shaders/*.vert"
 		)
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
@@ -49,15 +49,15 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
 	get_filename_component(PATH_NAME ${GLSL} DIRECTORY)
 	file(RELATIVE_PATH PATH_NAME "${PROJECT_SOURCE_DIR}/shaders/" ${PATH_NAME})
 	#MESSAGE("GLSL PATH: ${PATH_NAME} NAME: ${FILE_NAME}")
-	set(SPIRV "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}/${FILE_NAME}.spv")
+	set(GLSL_OUTPUT "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}/${FILE_NAME}")
 	add_custom_command(
-			OUTPUT ${SPIRV}
+			OUTPUT ${GLSL_OUTPUT}
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}"
-			COMMAND ${GLSL_VALIDATOR} -G ${GLSL} -o ${SPIRV}
-			COMMAND ${CMAKE_COMMAND} -E copy ${GLSL} "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}/${FILE_NAME}"
+			COMMAND ${GLSL_VALIDATOR} ${GLSL} 
+			COMMAND ${CMAKE_COMMAND} -E copy ${GLSL} ${GLSL_OUTPUT}
 			DEPENDS ${GLSL})
-	list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+	list(APPEND SPIRV_BINARY_FILES ${GLSL_OUTPUT})
 endforeach(GLSL)
 
 add_custom_target(

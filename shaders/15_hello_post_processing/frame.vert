@@ -1,8 +1,8 @@
-#version 450
+#version 330 core
 layout (location = 0) in vec2 aPos;
 layout (location = 1) in vec2 aTexCoords;
 
-layout (location = 2) out vec2 TexCoords;
+out vec2 TexCoords;
 
 void main()
 {

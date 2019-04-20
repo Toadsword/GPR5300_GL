@@ -1,4 +1,4 @@
-#version 450
+#version 330 core
 layout(location = 0) out vec4 FragColor;
 struct Material {
     sampler2D diffuse;
@@ -13,18 +13,16 @@ struct DirectionLight {
     vec3 diffuse;
     vec3 specular;
 };
-layout(set = 0, binding = 0) uniform materialFragBlock
-{
-    DirectionLight light;
+    uniform DirectionLight light;
 
-    vec3 objectColor;
-    vec3 lightColor;
-    vec3 viewPos;
-};
-layout(location = 1) in vec3 FragPos;
-layout(location = 2) in vec3 Normal;
-layout(location = 3) in vec2 TexCoords;
-layout(location = 4) uniform Material material;
+    uniform vec3 objectColor;
+    uniform vec3 lightColor;
+    uniform vec3 viewPos;
+
+ in vec3 FragPos;
+ in vec3 Normal;
+ in vec2 TexCoords;
+uniform Material material;
 
 
 void main()

@@ -1,14 +1,12 @@
-#version 450
+#version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aTexCoord;
 
-layout(set = 0, binding = 0) uniform coordsBlock
-{
-    mat4 model;
-    mat4 view;
-    mat4 projection;
-};
-layout (location = 2) out vec2 TexCoord;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec2 TexCoord;
 
 void main()
 {

@@ -1,18 +1,16 @@
-#version 450
+#version 330 core
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec2 aTexCoord;
 
-layout(location = 2) out vec2 TexCoord;
-layout(set = 0, binding = 0) uniform mvpBlock
-{
-	mat4 model;
-	mat4 view;
-	mat4 projection;
-};
-layout(location = 3) uniform float heightResolution;
-layout(location = 4) uniform float heightOrigin;
+out vec2 TexCoord;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
-layout(location = 5) uniform sampler2D texture1;
+uniform float heightResolution;
+uniform float heightOrigin;
+
+uniform sampler2D texture1;
 
 void main()
 {
