@@ -107,10 +107,10 @@ void Engine::Init()
 	{
 		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
 	}
-
+#if _DEBUG == 1
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(MessageCallback, 0);
-
+#endif
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();

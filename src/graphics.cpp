@@ -138,6 +138,8 @@ void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShad
 void Shader::Bind()
 {
 	glUseProgram(shaderProgram);
+	if (bindingFunction != nullptr)
+		bindingFunction();
 }
 
 int Shader::GetProgram()
@@ -218,6 +220,11 @@ void Shader::SetBasicMaterial(const BasicMaterial& basicMaterial)
 	SetVec3("material.specular", basicMaterial.specular);
 	SetFloat("material.shininess", basicMaterial.shininess);
 	
+}
+
+void Shader::SetBindingFunction(std::function<void()> bindingFunction)
+{
+	this->bindingFunction = bindingFunction;
 }
 
 unsigned gliCreateTexture(char const* filename)

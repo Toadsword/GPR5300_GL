@@ -173,7 +173,10 @@ endif()
 
 #COMMON
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
-add_library(COMMON ${SRC} ${CMN_SHADERS})
+
+file(GLOB_RECURSE SHADERS_SRC shaders/engine/*.vert shaders/engine/*.frag)
+source_group("Shaders" FILES ${SHADERS_SRC})
+add_library(COMMON ${SRC} ${SHADERS_SRC})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})
 set_property(TARGET COMMON PROPERTY CXX_STANDARD 17)
 add_dependencies(COMMON Shaders)

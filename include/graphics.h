@@ -3,6 +3,7 @@
 #include <vector>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
+#include <functional>
 
 
 struct BasicMaterial
@@ -34,8 +35,10 @@ public:
 	void SetMat3(const std::string &name, const glm::mat3 &mat) const;
 	void SetMat4(const std::string &name, const glm::mat4 &mat) const;
 	void SetBasicMaterial(const BasicMaterial& basicMaterial);
+	void SetBindingFunction(std::function<void(void)> bindingFunction);
 private:
 	int shaderProgram = 0;
+	std::function<void(void)> bindingFunction = nullptr;
 };
 
 class DrawingProgram
