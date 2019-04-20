@@ -33,6 +33,8 @@ struct Configuration
 	Color bgColor = {0,0,0,0};
 
 	std::string windowName = "OpenGL";
+	unsigned int glMajorVersion = 4;
+	unsigned int glMinorVersion = 5;
 };
 
 class Engine

@@ -44,8 +44,8 @@ void Engine::Init()
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 	// 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, configuration.glMajorVersion);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, configuration.glMinorVersion);
 
 	// Turn on double buffering with a 24bit Z buffer.
 	// You may need to change this to 16 or 32 for your system
