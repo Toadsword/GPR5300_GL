@@ -439,3 +439,48 @@ const std::vector<Shader*>& DrawingProgram::GetShaders()
 {
 	return shaders;
 }
+
+void Skybox::Init(std::vector<std::string>& faces)
+{
+	cubemapShader.CompileSource(
+		"shaders/16_hello_cubemaps/cubemaps.vert",
+		"shaders/16_hello_cubemaps/cubemaps.frag"
+	);
+	cubemapTexture = LoadCubemap(faces);
+
+	glGenVertexArrays(1, &cubeMapVAO);
+	glGenBuffers(1, &cubeMapVBO);
+
+	glBindVertexArray(cubeMapVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, cubeMapVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// texture coord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+}
+
+void Skybox::Draw()
+{
+	glDepthFunc(GL_LEQUAL);
+	cubemapShader.Bind();
+	cubemapShader.SetMat4("projection", projection);
+	cubemapShader.SetMat4("view", skyboxView);
+	glBindVertexArray(cubeMapVAO);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	glDepthFunc(GL_LESS);
+}
+
+void Skybox::SetViewMatrix(glm::mat4& view)
+{
+	skyboxView = glm::mat4(glm::mat3(view));
+}
