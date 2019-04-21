@@ -53,6 +53,7 @@ public:
 	Configuration& GetConfiguration();
 	InputManager& GetInputManager();
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
+	std::vector<DrawingProgram*>& GetDrawingPrograms();
 
 
 	static Engine* GetPtr();

@@ -349,6 +349,11 @@ void Engine::AddDrawingProgram(DrawingProgram* drawingProgram)
 	drawingPrograms.push_back(drawingProgram);
 }
 
+std::vector<DrawingProgram*>& Engine::GetDrawingPrograms()
+{
+	return drawingPrograms;
+}
+
 Engine* Engine::GetPtr()
 {
 	return enginePtr;
