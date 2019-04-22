@@ -178,13 +178,33 @@ endif()
 
 #COMMON
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
-
+file(GLOB_RECURSE SCENES_SRC
+		"${PROJECT_SOURCE_DIR}/scenes/*.json"
+		)
+foreach(SCENE_SRC ${SCENES_SRC})
+	get_filename_component(FILE_NAME ${SCENE_SRC} NAME)
+	get_filename_component(PATH_NAME ${SCENE_SRC} DIRECTORY)
+	
+	#MESSAGE("GLSL PATH: ${PATH_NAME} NAME: ${FILE_NAME}")
+	set(SCENE_OUTPUT "${PROJECT_BINARY_DIR}/scenes/${FILE_NAME}")
+	add_custom_command(
+			OUTPUT ${SCENE_OUTPUT}
+			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/scenes/"
+			COMMAND ${CMAKE_COMMAND} -E copy ${SCENE_SRC} ${SCENE_OUTPUT}
+			DEPENDS ${SCENE_SRC})
+			list(APPEND SCENES_OUTPUT ${SCENE_OUTPUT})
+endforeach(SCENE_SRC)
+add_custom_target(
+		Scenes
+		DEPENDS ${SCENES_OUTPUT}
+)
 file(GLOB_RECURSE SHADERS_SRC shaders/engine/*.vert* shaders/engine/*.frag*)
 source_group("Shaders" FILES ${SHADERS_SRC})
-add_library(COMMON ${SRC} ${SHADERS_SRC})
+source_group("Scenes" FILES ${SCENES_SRC})
+add_library(COMMON ${SRC} ${SHADERS_SRC} ${SCENES_SRC})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})
 set_property(TARGET COMMON PROPERTY CXX_STANDARD 17)
-add_dependencies(COMMON Shaders)
+add_dependencies(COMMON Shaders Scenes)
 if(USE_SDL2)
 target_compile_definitions(COMMON PUBLIC USE_SDL2=1)
 endif()
