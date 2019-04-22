@@ -1,7 +1,7 @@
-#version 330 core
+
 layout(location = 0) out vec4 FragColor;
 
-struct Material {
+struct TextureMaterial {
 	sampler2D diffuse;
 	sampler2D specular;
 	float shininess;
@@ -22,7 +22,7 @@ struct FlashLight {
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
-uniform Material material;
+uniform TextureMaterial material;
 
 
 void main()

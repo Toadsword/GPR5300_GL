@@ -81,7 +81,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 			vertex.Tangent = vector;
 		}
 		// bitangent
-		if (mesh->mTangents != nullptr)
+		if (mesh->mBitangents != nullptr)
 		{
 			vector.x = mesh->mBitangents[i].x;
 			vector.y = mesh->mBitangents[i].y;

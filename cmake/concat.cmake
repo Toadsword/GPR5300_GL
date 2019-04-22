@@ -1,0 +1,3 @@
+FILE(READ ${SRC1} S1)
+FILE(READ ${SRC2} S2)
+FILE(WRITE ${DST} "${S1}\n${S2}")

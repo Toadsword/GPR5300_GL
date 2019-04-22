@@ -1,7 +1,7 @@
-#version 330 core
+
 layout(location = 0) out vec4 FragColor;
 
-struct Material {
+struct TextureMaterial {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
@@ -18,9 +18,9 @@ uniform  vec3 objectColor;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
 uniform Light light;
-uniform Material material;
- in vec3 FragPos;
- in vec3 Normal;
+uniform TextureMaterial material;
+in vec3 FragPos;
+in vec3 Normal;
 
 void main()
 {    

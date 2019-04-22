@@ -1,5 +1,5 @@
-#version 330 core
-struct Material {
+
+struct TextureMaterial {
 	sampler2D diffuse;
 	sampler2D specular;
 	float shininess;
@@ -25,7 +25,7 @@ in vec3 Normal;
 in vec2 TexCoords;
 
 
-uniform Material material;
+uniform TextureMaterial material;
 void main()
 {    
     // ambient

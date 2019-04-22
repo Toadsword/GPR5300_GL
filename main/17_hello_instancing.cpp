@@ -7,7 +7,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <Remotery.h>
 
-#define INSTANCING
+//#define INSTANCING
 class HelloInstancingDrawingProgram : public DrawingProgram
 {
 public:

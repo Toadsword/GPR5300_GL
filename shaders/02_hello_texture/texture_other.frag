@@ -1,9 +1,9 @@
-#version 450
-layout(location = 0) out vec4 FragColor;
-layout(location = 2) in vec2 TexCoord;
 
-layout(location = 3) uniform sampler2D texture1;
-layout(location = 4) uniform sampler2D texture2;
+layout(location = 0) out vec4 FragColor;
+in vec2 TexCoord;
+
+uniform sampler2D texture1;
+uniform sampler2D texture2;
 
 void main()
 {

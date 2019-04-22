@@ -47,15 +47,20 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
 foreach(GLSL ${GLSL_SOURCE_FILES})
 	get_filename_component(FILE_NAME ${GLSL} NAME)
 	get_filename_component(PATH_NAME ${GLSL} DIRECTORY)
+	get_filename_component(EXTENSION ${GLSL} EXT)
 	file(RELATIVE_PATH PATH_NAME "${PROJECT_SOURCE_DIR}/shaders/" ${PATH_NAME})
 	#MESSAGE("GLSL PATH: ${PATH_NAME} NAME: ${FILE_NAME}")
 	set(GLSL_OUTPUT "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}/${FILE_NAME}")
+	set(ENGINE_SHADER "${PROJECT_SOURCE_DIR}/shaders/engine/engine${EXTENSION}.glsl")
 	add_custom_command(
 			OUTPUT ${GLSL_OUTPUT}
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/"
 			COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/shaders/${PATH_NAME}"
-			COMMAND ${GLSL_VALIDATOR} ${GLSL} 
-			COMMAND ${CMAKE_COMMAND} -E copy ${GLSL} ${GLSL_OUTPUT}
+			COMMAND ${CMAKE_COMMAND} -D SRC1=${ENGINE_SHADER}
+                             -D SRC2=${GLSL}
+                             -D DST=${GLSL_OUTPUT}
+                             -P ${PROJECT_SOURCE_DIR}/cmake/concat.cmake
+			COMMAND ${GLSL_VALIDATOR} ${GLSL_OUTPUT}
 			DEPENDS ${GLSL})
 	list(APPEND SPIRV_BINARY_FILES ${GLSL_OUTPUT})
 endforeach(GLSL)
@@ -174,7 +179,7 @@ endif()
 #COMMON
 message("SFGE LIBRARIES : ${SFGE_LIBRARIES}")
 
-file(GLOB_RECURSE SHADERS_SRC shaders/engine/*.vert shaders/engine/*.frag)
+file(GLOB_RECURSE SHADERS_SRC shaders/engine/*.vert* shaders/engine/*.frag*)
 source_group("Shaders" FILES ${SHADERS_SRC})
 add_library(COMMON ${SRC} ${SHADERS_SRC})
 target_link_libraries(COMMON PUBLIC ${SFGE_LIBRARIES})

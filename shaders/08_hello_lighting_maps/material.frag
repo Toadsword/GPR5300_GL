@@ -1,7 +1,7 @@
-#version 330 core
+
 layout(location = 0) out vec4 FragColor;
 
-struct Material {
+struct TextureMaterial {
     sampler2D diffuse;
     sampler2D specular;
     float shininess;
@@ -19,7 +19,7 @@ uniform vec3 viewPos;
 
 uniform Light light;
 
-uniform Material material;
+uniform TextureMaterial material;
 
 in vec3 FragPos;
 in vec3 Normal;
