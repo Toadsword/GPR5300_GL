@@ -381,7 +381,7 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 	}
-	if (extension == ".jpg")
+	if (extension == ".jpg" || extension == ".tga")
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	}

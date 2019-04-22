@@ -195,7 +195,7 @@ void HelloWaterDrawingProgram::Draw()
 	underWaterCamera.Front = glm::reflect(sceneCamera->Front, glm::vec3(0.0f, 1.0f, 0.0f));
 	underWaterCamera.Up = glm::reflect(sceneCamera->Up, glm::vec3(0.0f, 1.0f, 0.0f));
 	underWaterCamera.Position = sceneCamera->Position;
-	underWaterCamera.Position.y = waterPosition[1]-underWaterCamera.Position.y;
+	underWaterCamera.Position.y = underWaterCamera.Position.y-2*abs(underWaterCamera.Position.y-waterPosition[1]);
 #ifdef REFLECTION_MAP
 	//Under Water framebuffer
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
