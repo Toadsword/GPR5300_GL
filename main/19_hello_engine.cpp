@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Hello Engine";
-	auto sceneDrawingProgram = new SceneDrawingProgram();
+	auto* sceneDrawingProgram = new SceneDrawingProgram();
 	auto & scene = sceneDrawingProgram->GetScene();
 	scene.SetScenePath("scenes/19_engine_scene.json");
 	engine.AddDrawingProgram(sceneDrawingProgram);

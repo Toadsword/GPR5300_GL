@@ -5,10 +5,22 @@
 "position": [ 0.0, 0.0, 0.0 ],
 "scale": [ 0.2, 0.2, 0.2 ],
 "angles": [ 0.0, 0.0, 0.0 ]
+},
+{
+"model": "data/models/rocks01/rock_01.obj",
+"position": [ 2.0, 0.0, 0.0 ],
+"scale": [ 0.02, 0.02, 0.02 ],
+"angles": [ 0.0, 0.0, 0.0 ]
+},
+{
+"model": "data/models/granit01/granit.obj",
+"position": [ -2.0, 0.0, 0.0 ],
+"scale": [ 10.0, 10.0, 10.0 ],
+"angles": [ 0.0, 0.0, 0.0 ]
 }
 ],
 "lights": {
-  "ambient":  0.1,
+  "ambient":  1.0,
 "point_lights": [
 {
 "position": [ 0, 0, 1 ],
@@ -18,7 +30,7 @@
 ],
 "spot_lights": [],
 "direction_light": {
-
+"enable": false
 }
 }
 

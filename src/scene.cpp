@@ -52,12 +52,27 @@ void Scene::Init()
 		pointLight.enable = pointLightJson["enable"];
 		pointLights.push_back(pointLight);
 	}
-	for (auto& spotLight : lightsJson["spot_lights"])
+	for (auto& spotLightJson : lightsJson["spot_lights"])
 	{
-
+		SpotLight spotLight;
+		spotLight.position = ConvertVec3FromJson(spotLightJson["position"]);
+		spotLight.direction = ConvertVec3FromJson(spotLightJson["direction"]);
+		spotLight.cutOff = spotLightJson["cutOff"];
+		spotLight.outerCutOff = spotLightJson["outerCutOff"];
+		spotLight.intensity = spotLightJson["intensity"];
+		spotLights.push_back(spotLight);
 	}
 	{
-		json directionLight = lightsJson["direction_light"];
+		json directionLightJson = lightsJson["direction_light"];
+		DirectionLight directionLight;
+		directionLight.enable = directionLightJson["enable"];
+		if (directionLight.enable)
+		{
+			directionLight.direction = ConvertVec3FromJson(directionLightJson["direction"]);
+			directionLight.intensity = directionLightJson["intensity"];
+		}
+		this->directionLight = directionLight;
+
 	}
 }
 

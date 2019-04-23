@@ -4,6 +4,35 @@
 #include "model.h"
 #include "imgui.h"
 
+
+#define REFRACTION
+
+#ifdef REFRACTION
+float refractiveIndexes []=
+{
+	1.0f,
+	1.33f,
+	1.309f,
+	1.52f,
+	2.42f
+};
+enum class RefractriveMaterial
+{
+	Air,
+	Water,
+	Ice,
+	Glass,
+	Diamond
+};
+const char* refractriveMaterialName[] =
+{
+	"Air",
+	"Water",
+	"Ice",
+	"Glass",
+	"Diamond"
+};
+#endif
 class HelloCubemapsDrawingProgram : public DrawingProgram
 {
 public:
@@ -117,6 +146,9 @@ private:
 	float reflectionValue = 0.5f;
 	int diffuseMapTexture = 0;
 	int specularMapTexture = 0;
+#ifdef REFRACTION
+	int currentRefractiveMaterial = (int)RefractriveMaterial::Water;
+#endif
 };
 
 void HelloCubemapsDrawingProgram::Init()
@@ -203,7 +235,12 @@ void HelloCubemapsDrawingProgram::Init()
 	model.Init("data/models/nanosuit2/nanosuit.obj");
 	modelShaderProgram.CompileSource(
 		"shaders/16_hello_cubemaps/model_refl.vert",
-		"shaders/16_hello_cubemaps/model_refl.frag");
+#ifdef REFRACTION
+		"shaders/16_hello_cubemaps/model_refr.frag"
+#else
+		"shaders/16_hello_cubemaps/model_refl.frag"
+#endif
+	);
 	shaders.push_back(&modelShaderProgram);
 
 	
@@ -272,6 +309,9 @@ void HelloCubemapsDrawingProgram::Draw()
 	modelShaderProgram.SetMat4("view", view);
 
 	modelShaderProgram.SetFloat("reflectionValue", reflectionValue);
+#ifdef REFRACTION
+	modelShaderProgram.SetFloat("refractiveIndex", refractiveIndexes[currentRefractiveMaterial]);
+#endif
 	modelShaderProgram.SetVec3("cameraPos", camera.Position);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
@@ -313,6 +353,9 @@ void HelloCubemapsDrawingProgram::UpdateUi()
 {
 	ImGui::Separator();
 	ImGui::SliderFloat("Reflection Value", &reflectionValue, 0.0f, 1.0f);
+#ifdef REFRACTION
+	ImGui::Combo("combo", &currentRefractiveMaterial, refractriveMaterialName, IM_ARRAYSIZE(refractriveMaterialName));
+#endif
 }
 
 int main(int argc, char** argv)
