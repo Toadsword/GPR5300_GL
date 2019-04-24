@@ -5,7 +5,7 @@ layout (location = 3) in vec3 aTangent;
 layout (location = 4) in vec3 aBitangent;
 
 out VS_OUT vs_out;
-
+out vec3 TangentLightPos;
 
 uniform vec3 lightPos;
 uniform vec3 viewPos;
@@ -27,7 +27,7 @@ void main()
     vec3 B = cross(N, T);
     
     mat3 TBN = transpose(mat3(T, B, N));    
-    vs_out.TangentLightPos = TBN * lightPos;
+    TangentLightPos = TBN * lightPos;
     vs_out.TangentViewPos  = TBN * viewPos;
     vs_out.TangentFragPos  = TBN * vs_out.FragPos;
         

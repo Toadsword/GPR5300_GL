@@ -1,6 +1,7 @@
 layout (location = 0) out vec4 FragColor;
 
 in VS_OUT vs_out;
+in vec3 TangentLightPos;
 
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
@@ -18,7 +19,7 @@ void main()
     // ambient
     vec3 ambient = 0.2 * color;
     // diffuse
-    vec3 lightDir = normalize(vs_out.TangentLightPos - vs_out.TangentFragPos);
+    vec3 lightDir = normalize(TangentLightPos - vs_out.TangentFragPos);
     float diff = max(dot(lightDir, normal), 0.0);
     vec3 diffuse = diff * color;
     // specular
