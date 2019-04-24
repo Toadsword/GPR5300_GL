@@ -20,8 +20,10 @@ private:
 	float lastY;
 	Camera camera = Camera(glm::vec3(0.0f,0.0f,3.0f));
 	Shader normalShader;
+	Shader withoutNormalShader;
 	Plane plane;
 	float lightPos[3] = {0,0,1};
+	bool enableNormal = true;
 };
 
 void HelloNormalDrawingProgram::Init()
@@ -36,7 +38,11 @@ void HelloNormalDrawingProgram::Init()
 		"shaders/18_hello_normal/normal.vert", 
 		"shaders/18_hello_normal/normal.frag");
 	shaders.push_back(&normalShader);
-
+	withoutNormalShader.CompileSource(
+        "shaders/18_hello_normal/without_normal.vert",
+        "shaders/18_hello_normal/without_normal.frag"
+    );
+    shaders.push_back(&withoutNormalShader);
 	plane.Init();
 
 	diffuseMap = stbCreateTexture("data/sprites/brickwall.jpg");
@@ -92,26 +98,25 @@ void HelloNormalDrawingProgram::Draw()
 	//model = glm::rotate(model, engine->GetTimeSinceInit()*glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 
-	normalShader.Bind();
-	normalShader.SetMat4("model", model);
-	normalShader.SetMat4("view", camera.GetViewMatrix());
-	normalShader.SetMat4("projection", projection);
+	Shader& currentShader = enableNormal?normalShader:withoutNormalShader;
+    currentShader.Bind();
+    currentShader.SetMat4("model", model);
+    currentShader.SetMat4("view", camera.GetViewMatrix());
+    currentShader.SetMat4("projection", projection);
 
-	normalShader.SetVec3("viewPos", camera.Position);
-	normalShader.SetVec3("lightPos", lightPos);
+    currentShader.SetVec3("viewPos", camera.Position);
+    currentShader.SetVec3("lightPos", lightPos);
 
 
-	normalShader.SetInt("diffuseMap", 0);
-	normalShader.SetInt("normalMap", 1);
+    currentShader.SetInt("diffuseMap", 0);
+    currentShader.SetInt("normalMap", 1);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, diffuseMap);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, normalMap);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, normalMap);
 
 	plane.Draw();
-
-
 }
 
 void HelloNormalDrawingProgram::Destroy()
@@ -122,6 +127,7 @@ void HelloNormalDrawingProgram::UpdateUi()
 {
 	ImGui::Separator();
 	ImGui::InputFloat3("LightPos", lightPos);
+	ImGui::Checkbox("Enable Normal Map", &enableNormal);
 }
 
 int main(int argc, char** argv)

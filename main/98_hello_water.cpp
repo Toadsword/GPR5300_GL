@@ -93,7 +93,7 @@ protected:
 	Shader modelShader;
 	Camera camera = Camera(glm::vec3(0.0f, 3.0f, 10.0f));
 	glm::mat4 projection = {};
-	const char* jsonPath = "data/scenes/water.json";
+	const char* jsonPath = "scenes/water.json";
 	json sceneJson;
 	std::map<std::string, Model> modelMap;
 	std::vector<Model*> models;
@@ -245,7 +245,8 @@ void HelloWaterDrawingProgram::Draw()
 		scene->GetModels()[i]->Draw(underWaterShader);
 	}
 	Skybox& skybox = scene->GetSkybox();
-	skybox.SetViewMatrix(underWaterCamera.GetViewMatrix());
+	const auto underWaterView = underWaterCamera.GetViewMatrix();
+	skybox.SetViewMatrix(underWaterView);
 	skybox.SetProjectionMatrix(scene->GetProjection());
 	skybox.Draw();
 	glDisable(GL_STENCIL_TEST);
@@ -412,7 +413,8 @@ void SceneDrawingProgram::Draw()
 		modelShader.SetMat4("model", modelMatrix);
 		models[i]->Draw(modelShader);
 	}
-	skybox.SetViewMatrix(camera.GetViewMatrix());
+	auto view = camera.GetViewMatrix();
+	skybox.SetViewMatrix(view);
 	skybox.SetProjectionMatrix(projection);
 	skybox.Draw();
 }

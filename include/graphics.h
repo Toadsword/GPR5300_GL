@@ -62,7 +62,7 @@ class Skybox
 public:
 	void Init(std::vector<std::string>& faces);
 	void Draw();
-	void SetViewMatrix(glm::mat4& view);
+	void SetViewMatrix(const glm::mat4& view);
 	void SetProjectionMatrix(glm::mat4& projection) { this->projection = projection; }
 private:
 	Shader skyboxShader;

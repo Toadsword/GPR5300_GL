@@ -480,7 +480,7 @@ void Skybox::Draw()
 	glDepthFunc(GL_LESS);
 }
 
-void Skybox::SetViewMatrix(glm::mat4& view)
+void Skybox::SetViewMatrix(const glm::mat4& view)
 {
 	skyboxView = glm::mat4(glm::mat3(view));
 }
