@@ -5,7 +5,7 @@
 #include "imgui.h"
 
 
-#define REFRACTION
+//#define REFRACTION
 
 #ifdef REFRACTION
 float refractiveIndexes []=
