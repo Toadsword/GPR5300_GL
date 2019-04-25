@@ -9,7 +9,6 @@
 
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
-#include "camera.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "imgui.h"
 
@@ -31,10 +30,6 @@ private:
 
 	Model model;
 
-	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-	float lastX = 0;
-	float lastY = 0;
-
 	float outlineMoveScale = 0.1f;
 	float outlineColor[3] = { 1.0f,1.0f,1.0f };
 };
@@ -42,11 +37,6 @@ private:
 void HelloOutlineDrawingProgram::Init()
 {
 	programName = "Hello Outline";
-
-	Engine* engine = Engine::GetPtr();
-	auto& config = engine->GetConfiguration();
-	lastX = config.screenWidth / 2.0f;
-	lastY = config.screenHeight / 2.0f;
 
     modelShaderProgram.CompileSource(
             "shaders/12_hello_outline/model.vert",
@@ -68,6 +58,7 @@ void HelloOutlineDrawingProgram::Draw()
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_STENCIL_TEST);
@@ -142,6 +133,7 @@ void HelloOutlineDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
+	auto& camera = engine->GetCamera();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
 
@@ -166,16 +158,9 @@ void HelloOutlineDrawingProgram::ProcessInput()
 
 	auto mousePos = inputManager.GetMousePosition();
 
-	float xOffset = mousePos.x - lastX;
-	float yOffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
-
-	camera.ProcessMouseMovement(xOffset, yOffset);
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
-
-
 }
 
 

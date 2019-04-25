@@ -5,8 +5,6 @@
 
 #include <engine.h>
 #include <graphics.h>
-#include <camera.h>
-
 
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -87,19 +85,11 @@ private:
 	-1.0f,  1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 
 	-1.0f, -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 
 	};
-	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-	float lastX = 0;
-	float lastY = 0;
 };
 
 
 void HelloStencilDrawingProgram::Init()
 {
-	Engine* engine = Engine::GetPtr();
-	auto& config = engine->GetConfiguration();
-	lastX = config.screenWidth / 2.0f;
-	lastY = config.screenHeight / 2.0f;
-
 	programName = "Hello Stencil";
 	shaders.push_back(&cubeShaderProgram);
 	shaders.push_back(&floorShaderProgram);
@@ -148,6 +138,7 @@ void HelloStencilDrawingProgram::Draw()
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 
 	glEnable(GL_DEPTH_TEST);
 	glm::mat4 view = camera.GetViewMatrix();
@@ -242,6 +233,7 @@ void HelloStencilDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
+	auto& camera = engine->GetCamera();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
 
@@ -266,12 +258,7 @@ void HelloStencilDrawingProgram::ProcessInput()
 
 	auto mousePos = inputManager.GetMousePosition();
 
-	float xoffset = mousePos.x - lastX;
-	float yoffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
-
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }

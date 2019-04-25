@@ -6,7 +6,6 @@
 class Light
 {
 public:
-	Light() = default;
 	virtual ~Light() = default;
 	float intensity = 0.5f;
 	virtual void Bind(Shader& shader, int index = 0) = 0;

@@ -1,6 +1,5 @@
 #include <engine.h>
 #include <graphics.h>
-#include <camera.h>
 #include "geometry.h"
 
 #include <imgui.h>
@@ -16,9 +15,6 @@ public:
 private:
 	unsigned int diffuseMap;
 	unsigned int normalMap;
-	float lastX;
-	float lastY;
-	Camera camera = Camera(glm::vec3(0.0f,0.0f,3.0f));
 	Shader normalShader;
 	Shader withoutNormalShader;
 	Plane plane;
@@ -29,10 +25,6 @@ private:
 void HelloNormalDrawingProgram::Init()
 {
 	programName = "Normal Map";
-	Engine* engine = Engine::GetPtr();
-	auto& config = engine->GetConfiguration();
-	lastX = config.screenWidth / 2.0f;
-	lastY = config.screenHeight / 2.0f;
 
 	normalShader.CompileSource(
 		"shaders/18_hello_normal/normal.vert", 
@@ -54,8 +46,10 @@ void HelloNormalDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
+	auto& camera = engine->GetCamera();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
+
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))
 	{
@@ -77,12 +71,7 @@ void HelloNormalDrawingProgram::ProcessInput()
 
 	auto mousePos = inputManager.GetMousePosition();
 
-	float xoffset = mousePos.x - lastX;
-	float yoffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
-
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }
@@ -91,6 +80,7 @@ void HelloNormalDrawingProgram::Draw()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 	ProcessInput();
 	glEnable(GL_DEPTH_TEST);
 

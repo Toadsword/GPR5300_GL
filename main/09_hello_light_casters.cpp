@@ -1,7 +1,6 @@
 #include <engine.h>
 #include "graphics.h"
 #include <glm/vec3.hpp>
-#include "camera.h"
 #include <glm/gtc/type_ptr.hpp>
 
 enum class LightType
@@ -102,10 +101,6 @@ private:
 
 	glm::vec3 lightPos = { 2.0f, 0.0f, 2.0f };
 
-	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-	float lastX = 0;
-	float lastY = 0;
-
 	int diffuseMapTexture = 0;
 	int specularMapTexture = 0;
 
@@ -192,6 +187,7 @@ void HelloLightCastersDrawingProgram::Draw()
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 
 	lightPos = glm::vec3(5.0f*sin(2.0f*M_PI / 3.0f*engine->GetTimeSinceInit()), lightPos.y, 2.0f*cos(2.0f*M_PI / 3.0f*engine->GetTimeSinceInit()));
 
@@ -289,7 +285,9 @@ void HelloLightCastersDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
-
+	auto& camera = engine->GetCamera();
+	float dt = engine->GetDeltaTime();
+	float cameraSpeed = 1.0f;
 
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))
@@ -312,15 +310,9 @@ void HelloLightCastersDrawingProgram::ProcessInput()
 
 	auto mousePos = inputManager.GetMousePosition();
 
-	float xoffset = mousePos.x - lastX;
-	float yoffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
-
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
-
 }
 
 
