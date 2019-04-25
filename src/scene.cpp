@@ -60,6 +60,7 @@ void Scene::Init()
 		spotLight.cutOff = spotLightJson["cutOff"];
 		spotLight.outerCutOff = spotLightJson["outerCutOff"];
 		spotLight.intensity = spotLightJson["intensity"];
+		spotLight.enable = spotLightJson["enable"];
 		spotLights.push_back(spotLight);
 	}
 	{

@@ -109,6 +109,7 @@ private:
 	glm::mat4 view;
 	PostProcessFx postProcessingFx = PostProcessFx::DistanceFog;
 	float fogColor[3] = {0.3f,0.3f,0.3f};
+	float fogZNear = 0.1;
 	float fogZFar = 100.0f;
 };
 
@@ -296,6 +297,7 @@ void HelloPostProcessDrawingProgram::Draw()
 	frameBufferShaderProgram.SetInt("depthTexture", 1);
 	frameBufferShaderProgram.SetVec3("fogColor", fogColor);
 	frameBufferShaderProgram.SetFloat("zFar", fogZFar);
+	frameBufferShaderProgram.SetFloat("zNear", fogZNear);
 	
 	glDisable(GL_DEPTH_TEST);
 	glActiveTexture(GL_TEXTURE0);
@@ -360,7 +362,6 @@ void HelloPostProcessDrawingProgram::UpdateUi()
 {
 	ImGui::Separator();
 	ImGui::ColorEdit3("fogColor", fogColor);
-	ImGui::SliderFloat("zFar", &fogZFar, 1.0f, 100.0f);
 }
 
 

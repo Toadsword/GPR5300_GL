@@ -5,7 +5,7 @@
 #include "imgui.h"
 
 
-//#define REFRACTION
+#define REFRACTION
 
 #ifdef REFRACTION
 float refractiveIndexes []=
@@ -143,7 +143,7 @@ private:
 
 	Model model;
 	Shader modelShaderProgram;
-	float reflectionValue = 0.5f;
+	float reflectionValue = 0.0f;
 	int diffuseMapTexture = 0;
 	int specularMapTexture = 0;
 #ifdef REFRACTION

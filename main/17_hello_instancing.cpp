@@ -8,6 +8,8 @@
 #include <Remotery.h>
 
 #define INSTANCING
+#define MOVEMENT
+//#define OPTI_BANDWIDTH
 class HelloInstancingDrawingProgram : public DrawingProgram
 {
 public:
@@ -16,8 +18,8 @@ public:
 	void Draw() override;
 	void Destroy() override;
 
-	glm::vec3 CalculateForce();
-	glm::vec3 CalculateVelocity();
+	void CalculateForce();
+	void CalculateVelocity();
 private:
 	Model asteroidModel{};
 	Shader modelShader;
@@ -25,13 +27,18 @@ private:
 	Camera camera = Camera(glm::vec3(0.0f, 100.0f, 500.0f));
 	float lastX;
 	float lastY;
-	size_t planetNmb = 10'000;
+	size_t planetNmb = 100'000;
 	std::vector<glm::vec3> positions;
 	std::vector<glm::mat4> modelMatrices;
 	std::vector<glm::vec3> velocities;
+	std::vector<glm::vec3> forces;
 #ifdef INSTANCING
 	unsigned int instanceVBO;
 #endif
+
+	const float gravityConst = 1000.0f;
+	const float centerMass = 1000.0f;
+	const float planetMass = 1.0f;
 };
 
 void HelloInstancingDrawingProgram::Init()
@@ -46,7 +53,11 @@ void HelloInstancingDrawingProgram::Init()
 	asteroidModel.Init("data/models/rocks01/rock_01.obj");
 	modelShader.CompileSource(
 #ifdef INSTANCING
-		"shaders/17_hello_instancing/model_instancing.vert", 
+#ifdef OPTI_BANDWIDTH
+		"shaders/17_hello_instancing/model_instancing_opti.vert",
+#else
+		"shaders/17_hello_instancing/model_instancing.vert",
+#endif
 		"shaders/17_hello_instancing/model_instancing.frag"
 #else
 		"shaders/engine/model.vert",
@@ -57,6 +68,7 @@ void HelloInstancingDrawingProgram::Init()
 
 	positions.resize(planetNmb);
 	velocities.resize(planetNmb);
+	forces.resize(planetNmb);
 	modelMatrices.resize(planetNmb);
 
 	for(auto i = 0u; i < planetNmb;i++)
@@ -77,12 +89,36 @@ void HelloInstancingDrawingProgram::Init()
 
 	}
 #ifdef INSTANCING
+
 	glGenBuffers(1, &instanceVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, planetNmb * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER,
+#ifdef OPTI_BANDWIDTH
+		planetNmb * sizeof(glm::vec3),
+		&positions[0],
+#else
+		planetNmb * sizeof(glm::mat4),
+		&modelMatrices[0],
+#endif 
+#ifdef MOVEMENT
+		GL_DYNAMIC_DRAW
+#else
+		GL_STATIC_DRAW
+#endif
+	);
+#ifdef OPTI_BANDWIDTH
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+#endif
+
 	unsigned int VAO = asteroidModel.meshes[0].GetVAO();
+
 	glBindVertexArray(VAO);
 	GLsizei vec4Size = sizeof(glm::vec4);
+#ifdef OPTI_BANDWIDTH
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glVertexAttribDivisor(3, 1);
+#else
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
 	glEnableVertexAttribArray(4);
@@ -96,7 +132,7 @@ void HelloInstancingDrawingProgram::Init()
 	glVertexAttribDivisor(4, 1);
 	glVertexAttribDivisor(5, 1);
 	glVertexAttribDivisor(6, 1);
-
+#endif
 	glBindVertexArray(0);
 
 #endif
@@ -176,14 +212,41 @@ void HelloInstancingDrawingProgram::Draw()
 }
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(asteroidMesh.GetVAO());
-	glDrawElementsInstanced(
-		GL_TRIANGLES, asteroidMesh.indices.size(), GL_UNSIGNED_INT, 0, planetNmb
-	);
-#else
+	
+#ifdef MOVEMENT
+	CalculateForce();
+	CalculateVelocity();
 	for (auto i = 0u; i < planetNmb; i++)
 	{
+		positions[i] += velocities[i] * engine->GetDeltaTime();
+		glm::mat4& model = modelMatrices[i];
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, positions[i]);
+		model = glm::scale(model,
+			glm::vec3(asteroidScale, asteroidScale, asteroidScale));
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, 
+#ifdef OPTI_BANDWIDTH
+		planetNmb * sizeof(glm::vec3),
+		&positions[0],
+#else
+		planetNmb * sizeof(glm::mat4),
+		&modelMatrices[0],
+#endif 
+		GL_DYNAMIC_DRAW);
+#endif
+	modelShader.SetFloat("asteroidScale", asteroidScale);
+	glDrawElementsInstanced(GL_TRIANGLES, asteroidMesh.indices.size(), GL_UNSIGNED_INT, 0, planetNmb);
+#else
+	CalculateForce();
+	CalculateVelocity();
+	for (auto i = 0u; i < planetNmb; i++)
+	{
+#ifdef MOVEMENT
+		positions[i] += velocities[i] * engine->GetDeltaTime();
+#endif
 		glm::mat4 model = glm::mat4(1.0f);
-
 		model = glm::translate(model, positions[i]);
 		model = glm::scale(model,
 			glm::vec3(asteroidScale, asteroidScale, asteroidScale));
@@ -199,24 +262,31 @@ void HelloInstancingDrawingProgram::Destroy()
 {
 }
 
-glm::vec3 HelloInstancingDrawingProgram::CalculateForce()
+void HelloInstancingDrawingProgram::CalculateForce()
 {
-	/*const auto deltaToCenter = screenSize / 2.0f - position;
-	auto velDir = sf::Vector2f(-deltaToCenter.y, deltaToCenter.x);
-	velDir /= Magnitude(velDir);
-
-	const auto speed = sqrtf(Magnitude(CalculateNewForce(position)) / planetMass * pixel2meter(Magnitude(deltaToCenter)));
-	return b2Vec2(velDir.x*speed, velDir.y*speed);*/
-	return glm::vec3();
+	rmt_ScopedCPUSample(CalculateForceCPU, 0);
+	for (int i = 0; i < planetNmb; i++)
+	{
+		const auto deltaToCenter = - positions[i];
+		const auto r = glm::length(deltaToCenter);
+		const auto force = gravityConst * centerMass * planetMass / (r*r);
+		forces[i] = deltaToCenter / r * force;  
+	}
 }
 
-glm::vec3 HelloInstancingDrawingProgram::CalculateVelocity()
+void HelloInstancingDrawingProgram::CalculateVelocity()
 {
-	/*const auto deltaToCenter = screenSize / 2.0f - position;
-	const auto r = Magnitude(deltaToCenter);
-	const auto force = gravityConst * centerMass*planetMass / (r*r);
-	return pixel2meter(deltaToCenter / r * force);*/
-	return glm::vec3();
+	rmt_ScopedCPUSample(CalculateVelocityCPU, 0);
+	for (int i = 0; i < planetNmb; i++)
+	{
+		const auto deltaToCenter = -positions[i];
+		auto velDir = glm::vec3(-deltaToCenter.z, 0.0f, deltaToCenter.x);
+		velDir = glm::normalize(velDir);
+
+		const auto speed = sqrtf(glm::length(forces[i]) / planetMass * glm::length(deltaToCenter));
+		velocities[i] = velDir*speed;
+	}
+
 }
 
 int main(int argc, char** argv)
@@ -227,6 +297,7 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Hello Instancing";
+	config.bgColor = { 1,1,1,1 };
 
 	engine.AddDrawingProgram(new HelloInstancingDrawingProgram());
 
