@@ -61,7 +61,7 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
                              -D DST=${GLSL_OUTPUT}
                              -P ${PROJECT_SOURCE_DIR}/cmake/concat.cmake
 			COMMAND ${GLSL_VALIDATOR} ${GLSL_OUTPUT}
-			DEPENDS ${GLSL})
+			DEPENDS ${GLSL} "${PROJECT_SOURCE_DIR}/shaders/engine/engine${EXTENSION}.glsl")
 	list(APPEND SPIRV_BINARY_FILES ${GLSL_OUTPUT})
 endforeach(GLSL)
 

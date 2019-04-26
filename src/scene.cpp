@@ -4,23 +4,15 @@
 #include <Remotery.h>
 #include <glm/gtc/quaternion.inl>
 #include <glm/detail/type_quat.hpp>
-#include <json.hpp>
-using json = nlohmann::json;
+#include <json_utility.h>
 
-glm::vec3 ConvertVec3FromJson(json& vec3Json)
-{
-	glm::vec3 vector3;
-	vector3.x = vec3Json[0];
-	vector3.y = vec3Json[1];
-	vector3.z = vec3Json[2];
-	return vector3;
-}
+
 
 void Scene::Init()
 {
-	
-	const auto jsonText = LoadFile(jsonPath);
-	json sceneJson = json::parse(jsonText);
+
+    const auto sceneJsonPtr = LoadJson(jsonPath);
+    const auto& sceneJson = *sceneJsonPtr;
 	modelNmb = sceneJson["models"].size();
 	models.resize(modelNmb);
 	positions.resize(modelNmb);
@@ -113,7 +105,7 @@ void SceneDrawingProgram::Init()
 	scene.Init();
 	modelShader.CompileSource(
 		"shaders/engine/model.vert",
-		"shaders/engine/model.frag");
+		"shaders/engine/model_diffuse.frag");
 	shaders.push_back(&modelShader);
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
