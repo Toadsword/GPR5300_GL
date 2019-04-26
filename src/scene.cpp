@@ -10,7 +10,6 @@
 
 void Scene::Init()
 {
-
     const auto sceneJsonPtr = LoadJson(jsonPath);
     const auto& sceneJson = *sceneJsonPtr;
 	modelNmb = sceneJson["models"].size();
@@ -148,7 +147,6 @@ void SceneDrawingProgram::Destroy()
 
 void SceneDrawingProgram::ProcessInput()
 {
-
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
 	float dt = engine->GetDeltaTime();
