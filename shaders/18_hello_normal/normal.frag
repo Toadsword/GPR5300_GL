@@ -1,7 +1,8 @@
 layout (location = 0) out vec4 FragColor;
 
 in VS_OUT vs_out;
-in vec3 TangentLightPos;
+
+uniform vec3 lightPos;
 
 uniform sampler2D diffuseMap;
 uniform sampler2D normalMap;
@@ -14,16 +15,17 @@ void main()
     // transform normal vector to range [-1,1]
     normal = normalize(normal * 2.0 - 1.0);  // this normal is in tangent space
    
+	normal = vs_out.invTBN * normal;
     // get diffuse color
     vec3 color = texture(diffuseMap, vs_out.TexCoords).rgb;
     // ambient
     vec3 ambient = 0.2 * color;
     // diffuse
-    vec3 lightDir = normalize(TangentLightPos - vs_out.TangentFragPos);
+    vec3 lightDir = normalize(lightPos - vs_out.FragPos);
     float diff = max(dot(lightDir, normal), 0.0);
     vec3 diffuse = diff * color;
     // specular
-    vec3 viewDir = normalize(vs_out.TangentViewPos - vs_out.TangentFragPos);
+    vec3 viewDir = normalize(vs_out.ViewPos - vs_out.FragPos);
     vec3 reflectDir = reflect(-lightDir, normal);
     vec3 halfwayDir = normalize(lightDir + viewDir);  
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
