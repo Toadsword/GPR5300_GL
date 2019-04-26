@@ -14,6 +14,7 @@ void PointLight::Bind(Shader& shader, int index)
 	shader.SetFloat("pointLights[" + i + "].constant", constant);
 	shader.SetFloat("pointLights[" + i + "].linear", linear);
 	shader.SetFloat("pointLights[" + i + "].quadratic", quadratic);
+	shader.SetFloat("pointLights[" + i + "].distance", distance);
 	shader.SetFloat("pointLights[" + i + "].intensity", intensity);
 }
 

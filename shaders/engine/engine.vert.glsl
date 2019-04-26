@@ -1,12 +1,13 @@
 #version 330 core
 
-struct VS_OUT {
-    vec3 FragPos;
-    vec2 TexCoords;
-    mat3 TBN;
-    vec3 TangentViewPos;
-    vec3 TangentFragPos;
+struct VS_OUT
+{
+	vec3 FragPos;
+	vec2 TexCoords;
+	vec3 ViewPos;
+	mat3 invTBN;
 };
+
 mat4 scale(float x, float y, float z) {
 	return mat4(
 		vec4(x, 0.0, 0.0, 0.0),

@@ -57,17 +57,28 @@
   ],
   "lights": {
     "ambient": 0.2,
-    "point_lights": [
-      {
-        "position": [
-          0,
-          0,
-          1
-        ],
-        "intensity": 0.6,
-        "enable": true
-      }
-    ],
+"point_lights": [
+{
+"position": [
+0,
+0,
+1
+],
+"intensity": 1.0,
+"distance": 5,
+"enable": true
+},
+{
+"position": [
+10,
+0,
+1
+],
+"intensity": 1.0,
+"distance": 5,
+"enable": true
+}
+],
     "spot_lights": [],
     "direction_light": {
       "enable": false

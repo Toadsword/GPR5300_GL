@@ -2,7 +2,7 @@
 struct EngineMaterial 
 {
 	sampler2D texture_diffuse1;
-	sampler2D texture_normal1;
+	sampler2D texture_normal;
 	sampler2D texture_specular1;
 	float shininess;
 };
@@ -11,9 +11,8 @@ struct VS_OUT
 {
     vec3 FragPos;
     vec2 TexCoords;
-    mat3 TBN;
-    vec3 TangentViewPos;
-    vec3 TangentFragPos;
+    vec3 ViewPos;
+	mat3 invTBN;
 };
 
 struct EnginePointLight
@@ -23,24 +22,24 @@ struct EnginePointLight
     float linear;
     float quadratic;
 	float intensity;
+	float distance;
 };
 
 vec3 calculate_point_light(EnginePointLight light, VS_OUT fs_in, EngineMaterial material, vec3 normal)
 {
 
-	vec3 tangentLightPos = fs_in.TBN * light.position;
-	float distance    = length(light.position - fs_in.TangentFragPos);
-	float attenuation = 1.0 / (light.constant + light.linear * distance + 
-    		    light.quadratic * (distance * distance)); 
+	float distance    = length(light.position - fs_in.FragPos);
+	float attenuation = clamp(light.distance / (light.constant + light.linear * distance + 
+    		    light.quadratic * (distance * distance)), 0.0,1.0); 
 
-	vec3 norm = normalize(normal);
-	vec3 lightDir = normalize(tangentLightPos - fs_in.TangentFragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
+	vec3 lightDir = normalize(light.position - fs_in.FragPos);
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
 
-	vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);  
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
+    vec3 reflectDir = reflect(-lightDir, normal);  
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     vec3 specular = spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));
 
 	return light.intensity * attenuation * (diffuse + specular);
@@ -58,10 +57,10 @@ vec3 calculate_directional_light(EngineDirectionLight light, VS_OUT fs_in, Engin
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(-light.direction);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse =  diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
+    vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
     
     // specular
-    vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
+    vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     vec3 specular = spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));
@@ -79,8 +78,7 @@ struct EngineSpotLight {
 
 vec3 calculate_spot_light(EngineSpotLight light, VS_OUT fs_in, EngineMaterial material, vec3 normal)
 {
-	vec3 tangentLightPos = fs_in.TBN * light.position;
-	vec3 lightDir = normalize(tangentLightPos - fs_in.TangentFragPos);
+	vec3 lightDir = normalize(light.position - fs_in.FragPos);
   	float theta = dot(lightDir, normalize(-light.direction));
     float epsilon   = light.cutOff - light.outerCutOff;
 	float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0); 
@@ -88,10 +86,10 @@ vec3 calculate_spot_light(EngineSpotLight light, VS_OUT fs_in, EngineMaterial ma
 	// diffuse 
 	vec3 norm = normalize(normal);
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse =  diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
+	vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
     
 	// specular
-	vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
+	vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
 	vec3 reflectDir = reflect(-lightDir, norm);  
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 	vec3 specular =  spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));

@@ -41,6 +41,7 @@ void Scene::Init()
 		pointLight.position = ConvertVec3FromJson(pointLightJson["position"]);
 		pointLight.intensity = pointLightJson["intensity"];
 		pointLight.enable = pointLightJson["enable"];
+		pointLight.distance = pointLightJson["distance"];
 		pointLights.push_back(pointLight);
 	}
 	for (auto& spotLightJson : lightsJson["spot_lights"])
@@ -104,7 +105,7 @@ void SceneDrawingProgram::Init()
 	scene.Init();
 	modelShader.CompileSource(
 		"shaders/engine/model.vert",
-		"shaders/engine/model_diffuse.frag");
+		"shaders/engine/model.frag");
 	shaders.push_back(&modelShader);
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
@@ -115,7 +116,9 @@ void SceneDrawingProgram::Draw()
 {
 	rmt_ScopedOpenGLSample(DrawScene);
 	rmt_ScopedCPUSample(DrawSceneCPU, 0);
+
 	ProcessInput();
+
 	glEnable(GL_DEPTH_TEST);
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();

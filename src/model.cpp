@@ -102,9 +102,6 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 			Vertex& v2 = vertices[face.mIndices[1]];
 			Vertex& v3 = vertices[face.mIndices[2]];
 
-			// calculate tangent/bitangent vectors of both triangles
-			glm::vec3 tangent1, bitangent1;
-
 			auto e1 = v2.Position-v1.Position;
 			auto e2 = v3.Position-v1.Position;
 
@@ -113,14 +110,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
 			float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
 
-			tangent1.x = f * (deltaUV2.y * e1.x - deltaUV1.y * e2.x);
-			tangent1.y = f * (deltaUV2.y * e1.y - deltaUV1.y * e2.y);
-			tangent1.z = f * (deltaUV2.y * e1.z - deltaUV1.y * e2.z);
+			glm::vec3 tangent1 = (e1 * deltaUV2.y - e2 * deltaUV1.y)*f;
 			tangent1 = glm::normalize(tangent1);
 
-			bitangent1.x = f * (-deltaUV2.x * e1.x + deltaUV1.x * e2.x);
-			bitangent1.y = f * (-deltaUV2.x * e1.y + deltaUV1.x * e2.y);
-			bitangent1.z = f * (-deltaUV2.x * e1.z + deltaUV1.x * e2.z);
+			glm::vec3 bitangent1 = (deltaUV1.x * e2 - deltaUV2.x * e1) * f;
 			bitangent1 = glm::normalize(bitangent1);
 
 			v1.Tangent = tangent1;
