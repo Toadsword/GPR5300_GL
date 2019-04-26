@@ -65,12 +65,12 @@
 1
 ],
 "intensity": 1.0,
-"distance": 5,
-"enable": true
+"distance": 1,
+"enable": false
 },
 {
 "position": [
-10,
+-10,
 0,
 1
 ],
@@ -79,7 +79,16 @@
 "enable": true
 }
 ],
-    "spot_lights": [],
+"spot_lights": [
+{
+"position": [ 0, 10, 1 ],
+"direction": [ 0, -1, 0 ],
+"cutOff": 12.5,
+"outerCutOff": 15.0,
+"intensity": 1,
+"enable": true
+}
+],
     "direction_light": {
       "enable": false
     }

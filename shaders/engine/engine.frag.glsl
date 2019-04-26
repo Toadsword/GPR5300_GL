@@ -91,7 +91,8 @@ vec3 calculate_spot_light(EngineSpotLight light, VS_OUT fs_in, EngineMaterial ma
 	// specular
 	vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
 	vec3 reflectDir = reflect(-lightDir, norm);  
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 	vec3 specular =  spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));
     return light.intensity * intensity * (diffuse + specular);
 }

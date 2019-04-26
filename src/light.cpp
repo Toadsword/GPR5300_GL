@@ -23,7 +23,7 @@ void SpotLight::Bind(Shader& shader, int index)
 	std::string i = std::to_string(index);
 	shader.SetVec3("spotLights[" + i + "].position", position);
 	shader.SetVec3("spotLights[" + i + "].direction", direction);
-	shader.SetFloat("spotLights[" + i + "].cutOff", cutOff);
-	shader.SetFloat("spotLights[" + i + "].outerCutOff", outerCutOff);
+	shader.SetFloat("spotLights[" + i + "].cutOff", glm::cos(glm::radians(cutOff)));
+	shader.SetFloat("spotLights[" + i + "].outerCutOff", glm::cos(glm::radians(outerCutOff)));
 	shader.SetFloat("spotLights[" + i + "].intensity", intensity);
 }
