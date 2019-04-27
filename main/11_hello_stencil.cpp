@@ -22,10 +22,6 @@ public:
 	void Draw() override;
 	void Destroy() override;
 private:
-	void ProcessInput();
-public:
-
-private:
 	Shader cubeShaderProgram;
 	Shader floorShaderProgram;
 	unsigned int cubeVBO, cubeVAO;
@@ -228,41 +224,6 @@ void HelloStencilDrawingProgram::Destroy()
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteBuffers(1, &cubeVBO);
 }
-
-void HelloStencilDrawingProgram::ProcessInput()
-{
-	Engine* engine = Engine::GetPtr();
-	auto& inputManager = engine->GetInputManager();
-	auto& camera = engine->GetCamera();
-	float dt = engine->GetDeltaTime();
-	float cameraSpeed = 1.0f;
-
-#ifdef USE_SDL2
-	if (inputManager.GetButton(SDLK_w))
-	{
-		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(SDLK_s))
-	{
-		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(SDLK_a))
-	{
-		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(SDLK_d))
-	{
-		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
-	}
-#endif
-
-	auto mousePos = inputManager.GetMousePosition();
-
-	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
-
-	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
-}
-
 
 int main(int argc, char** argv)
 {
