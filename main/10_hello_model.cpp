@@ -23,10 +23,6 @@ public:
 
 private:
 	Shader modelShaderProgram;
-
-
-	unsigned int VBO = 0, cubeVAO = 0;
-
 	Model model;
 
 	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -43,11 +39,11 @@ void HelloOutlineDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	modelShaderProgram.Init(
-		"shaders/10_hello_model/model.vert",
-		"shaders/10_hello_model/model.frag");
+    modelShaderProgram.CompileSource(
+            "shaders/10_hello_model/model.vert",
+            "shaders/10_hello_model/model.frag");
 	shaders.push_back(&modelShaderProgram);
-	// "data/models/nanosuit/scene.fbx"
+	// "data/models/nanosuit2/nanosuit.obj"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
 	model.Init("data/models/nanosuit2/nanosuit.obj");
@@ -61,22 +57,19 @@ void HelloOutlineDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 
 	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_CULL_FACE);
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 	modelShaderProgram.Bind();
-	const int viewLoc = glGetUniformLocation(modelShaderProgram.GetProgram(), "view");
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-
-	const int projectionLoc = glGetUniformLocation(modelShaderProgram.GetProgram(), "projection");
-	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
+	modelShaderProgram.SetMat4("view", view);
+	modelShaderProgram.SetMat4("projection", projection);
+	
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
 	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
 
-	const int modelLoc = glGetUniformLocation(modelShaderProgram.GetProgram(), "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	modelShaderProgram.SetMat4("model", model);
+	
 	this->model.Draw(modelShaderProgram);
 
 }

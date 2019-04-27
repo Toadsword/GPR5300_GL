@@ -119,7 +119,7 @@ void HelloTerrainDrawingProgram::Init()
         }
     }
 
-	shaderProgram.Init("shaders/99_hello_terrain/terrain.vert", "shaders/99_hello_terrain/terrain.frag");
+    shaderProgram.CompileSource("shaders/99_hello_terrain/terrain.vert", "shaders/99_hello_terrain/terrain.frag");
 	shaders.push_back(&shaderProgram);
 #ifdef USE_SFML2
 	sfTerrainHeightMap.loadFromFile("data/terrain/terrain_height2048.png");
@@ -294,7 +294,8 @@ void HelloTerrainDrawingProgram::Destroy()
 	glDeleteBuffers(1, &EBO);
 }
 
-void HelloTerrainDrawingProgram::UpdateUi() {
+void HelloTerrainDrawingProgram::UpdateUi() 
+{
 	DrawingProgram::UpdateUi();
 	ImGui::Separator();
 	ImGui::SliderFloat("Terrain Height Mult", &terrainElevationFactor, -10.0f, 10.0f, "height = %.3f");

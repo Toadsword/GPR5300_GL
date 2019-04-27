@@ -39,7 +39,7 @@ It's mostly a bunch of personal notes, probably incomplete. Feel free to query i
  - drawlist: primtiives/helpers to manipulate vertices post submission, so e.g. a quad/rect can be resized to fit later submitted content, _without_ using the ChannelSplit api
  - drawlist: non-AA strokes have gaps between points (#593, #288), especially RenderCheckmark().
  
- - main: considering adding an Init() function? some constructs are awkward in the implementation because of the lack of them.
+ - main: considering adding an CompileSource() function? some constructs are awkward in the implementation because of the lack of them.
  - main: find a way to preserve relative orders of multiple reappearing windows (so an app toggling between "modes" e.g. fullscreen vs all tools) won't lose relative ordering.
  - main: IsItemHovered() make it more consistent for various type of widgets, widgets with multiple components, etc. also effectively IsHovered() region sometimes differs from hot region, e.g tree nodes
  - main: IsItemHovered() info stored in a stack? so that 'if TreeNode() { Text; TreePop; } if IsHovered' return the hover state of the TreeNode?

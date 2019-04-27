@@ -18,7 +18,7 @@
 #include <input.h>
 
 class DrawingProgram;
-
+struct Remotery;
 
 #ifdef USE_SDL2
 typedef SDL_Color Color;
@@ -33,6 +33,8 @@ struct Configuration
 	Color bgColor = {0,0,0,0};
 
 	std::string windowName = "OpenGL";
+	unsigned int glMajorVersion = 4;
+	unsigned int glMinorVersion = 6;
 };
 
 class Engine
@@ -51,6 +53,7 @@ public:
 	Configuration& GetConfiguration();
 	InputManager& GetInputManager();
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
+	std::vector<DrawingProgram*>& GetDrawingPrograms();
 
 
 	static Engine* GetPtr();
@@ -73,7 +76,7 @@ private:
 	std::vector<DrawingProgram*> drawingPrograms;
 	InputManager inputManager;
 	Configuration configuration;
-
+	Remotery* rmt;
 	int selectedDrawingProgram = -1;
 	bool wireframeMode = false;
 	bool debugInfo = true;

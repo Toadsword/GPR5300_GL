@@ -15,6 +15,7 @@
 
 const float pixelPerUnit = 100.0f;
 #define USE_STENCIL
+#define REMOVE_ONLY_DEPTH
 
 class HelloStencilDrawingProgram : public DrawingProgram
 {
@@ -102,8 +103,8 @@ void HelloStencilDrawingProgram::Init()
 	programName = "Hello Stencil";
 	shaders.push_back(&cubeShaderProgram);
 	shaders.push_back(&floorShaderProgram);
-	cubeShaderProgram.Init("shaders/11_hello_stencil/cube.vert", "shaders/11_hello_stencil/cube.frag");
-	floorShaderProgram.Init("shaders/11_hello_stencil/floor.vert", "shaders/11_hello_stencil/floor.frag");
+    cubeShaderProgram.CompileSource("shaders/11_hello_stencil/cube.vert", "shaders/11_hello_stencil/cube.frag");
+    floorShaderProgram.CompileSource("shaders/11_hello_stencil/floor.vert", "shaders/11_hello_stencil/floor.frag");
 	textureWall = stbCreateTexture("data/sprites/wall.jpg");
 	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &cubeVBO);
@@ -149,11 +150,10 @@ void HelloStencilDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 
 	glEnable(GL_DEPTH_TEST);
-
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 
-
+	//Draw upper cube
 	cubeShaderProgram.Bind();
 	int viewLoc = glGetUniformLocation(cubeShaderProgram.GetProgram(), "view");
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -180,8 +180,12 @@ void HelloStencilDrawingProgram::Draw()
 	glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set any stencil to 1
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilMask(0xFF); // Write to stencil buffer
-	glDepthMask(GL_FALSE); // Don't write to depth buffer
+
+	
 	glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
+#endif
+#ifdef REMOVE_ONLY_DEPTH
+	glDepthMask(GL_FALSE); // Don't write to depth buffer
 #endif
 	floorShaderProgram.Bind();
 
@@ -206,9 +210,12 @@ void HelloStencilDrawingProgram::Draw()
 #ifdef USE_STENCIL
 	glStencilFunc(GL_EQUAL, 1, 0xFF); // Pass test if stencil value is 1
 	glStencilMask(0x00); // Don't write anything to stencil buffer
-	glDepthMask(GL_TRUE); // Write to depth buffer
+	
 
 	
+#endif
+#ifdef REMOVE_ONLY_DEPTH
+	glDepthMask(GL_TRUE); // Write to depth buffer
 #endif
 	model = glm::scale(
 		glm::translate(model, glm::vec3(0, 0, -1)),

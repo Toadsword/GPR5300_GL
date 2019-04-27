@@ -2,10 +2,6 @@
 #include <graphics.h>
 #include <GL/glew.h>
 
-#ifdef USE_SFML2
-#include <SFML/OpenGL.hpp>
-#include <SFML/Graphics/Texture.hpp>
-#endif
 
 //#define OTHER_TEXTURE
 
@@ -41,7 +37,6 @@ private:
 	unsigned int EBO = 0; // Element Buffer Object
 	GLuint textureWall;
 #ifdef OTHER_TEXTURE
-	sf::Texture sfTextureOtherPlay;
 	GLuint textureOtherPlay;
 #endif
 };
@@ -56,18 +51,17 @@ void HelloTextureDrawingProgram::Init()
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
 
-	shaderProgram.Init(
-		"shaders/02_hello_texture/texture.vert",
+    shaderProgram.CompileSource(
+            "shaders/02_hello_texture/texture.vert",
 #ifdef OTHER_TEXTURE
-		"shaders/02_hello_texture/texture_other_fragment.glsl"
+            "shaders/02_hello_texture/texture_other.frag"
 #else
-		"shaders/02_hello_texture/texture.frag"
+            "shaders/02_hello_texture/texture.frag"
 #endif
-	);
+    );
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
 #ifdef OTHER_TEXTURE
-	sfTextureOtherPlay.loadFromFile("data/sprites/other_play.png");
-	textureOtherPlay = sfTextureOtherPlay.getNativeHandle();
+	textureOtherPlay = stbCreateTexture("data/sprites/other_play.png");
 #endif
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object

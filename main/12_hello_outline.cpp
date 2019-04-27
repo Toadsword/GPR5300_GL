@@ -48,12 +48,12 @@ void HelloOutlineDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	modelShaderProgram.Init(
-		"shaders/12_hello_outline/model.vert",
-		"shaders/12_hello_outline/model.frag");
-	outlineShaderProgram.Init(
-		"shaders/12_hello_outline/outline.vert",
-		"shaders/12_hello_outline/outline.frag");
+    modelShaderProgram.CompileSource(
+            "shaders/12_hello_outline/model.vert",
+            "shaders/12_hello_outline/model.frag");
+    outlineShaderProgram.CompileSource(
+            "shaders/12_hello_outline/outline.vert",
+            "shaders/12_hello_outline/outline.frag");
 	shaders.push_back(&modelShaderProgram);
 	shaders.push_back(&outlineShaderProgram);
 	// "data/models/nanosuit/scene.fbx"
@@ -88,11 +88,10 @@ void HelloOutlineDrawingProgram::Draw()
 	model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
 	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
 
-	const int modelLoc = glGetUniformLocation(modelShaderProgram.GetProgram(), "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
 	modelShaderProgram.SetMat4("model", model);
 	this->model.Draw(modelShaderProgram);
-	glStencilMask(0xFF); // disable writing to the stencil buffer
+	
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 	glStencilMask(0x00); // disable writing to the stencil buffer
 	glDisable(GL_DEPTH_TEST);
@@ -113,7 +112,7 @@ void HelloOutlineDrawingProgram::Draw()
 		glm::vec3(0.0,-1.0,0.0),
 		glm::vec3(1.0,-1.0,0.0),
 	};
-	for (auto side : sides)
+	for (const auto side : sides)
 	{
 		const auto newModel = glm::translate(model, side*outlineMoveScale);
 		outlineShaderProgram.SetMat4("model", newModel);

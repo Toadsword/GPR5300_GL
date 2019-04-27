@@ -123,29 +123,29 @@ void HelloLightCastersDrawingProgram::Init()
 	switch(lightType)
 	{
 	case LightType::DIRECTIONAL:
-		objShaderProgram.Init(
-			"shaders/09_hello_light_casters/material.vert",
-			"shaders/09_hello_light_casters/material_directional.frag");
+        objShaderProgram.CompileSource(
+                "shaders/09_hello_light_casters/material.vert",
+                "shaders/09_hello_light_casters/material_directional.frag");
 		break;
 	case LightType::POINT:
-		objShaderProgram.Init(
-			"shaders/09_hello_light_casters/material.vert",
-			"shaders/09_hello_light_casters/material_point.frag");
-		lampShaderProgram.Init(
-			"shaders/09_hello_light_casters/lamp.vert",
-			"shaders/09_hello_light_casters/lamp.frag");
+        objShaderProgram.CompileSource(
+                "shaders/09_hello_light_casters/material.vert",
+                "shaders/09_hello_light_casters/material_point.frag");
+            lampShaderProgram.CompileSource(
+                    "shaders/09_hello_light_casters/lamp.vert",
+                    "shaders/09_hello_light_casters/lamp.frag");
 
 		shaders.push_back(&lampShaderProgram);
 		break;
 	case LightType::FLASH:
-		objShaderProgram.Init(
-			"shaders/09_hello_light_casters/material.vert",
-			"shaders/09_hello_light_casters/material_flashlight.frag");
+        objShaderProgram.CompileSource(
+                "shaders/09_hello_light_casters/material.vert",
+                "shaders/09_hello_light_casters/material_flashlight.frag");
 		break;
 	case LightType::SPOT:
-		objShaderProgram.Init(
-			"shaders/09_hello_light_casters/material.vert",
-			"shaders/09_hello_light_casters/material_spotlight.frag");
+        objShaderProgram.CompileSource(
+                "shaders/09_hello_light_casters/material.vert",
+                "shaders/09_hello_light_casters/material_spotlight.frag");
 		break;
 	default:
 		break;

@@ -1,29 +1,30 @@
-#version 330 core
-out vec4 FragColor;
 
-uniform vec3 objectColor;
-uniform vec3 lightColor;
-uniform vec3 viewPos;
-
-in vec3 FragPos;
-in vec3 Normal;
-in vec2 TexCoords;
-struct Material {
+layout(location = 0) out vec4 FragColor;
+struct TextureMaterial {
     sampler2D diffuse;
     sampler2D specular;
     float shininess;
-}; 
+};
 struct DirectionLight {
-    //vec3 position; //no longer needed for directional lights
-	vec3 direction;
+//vec3 position; //no longer needed for directional lights
+    vec3 direction;
 
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 };
+    uniform DirectionLight light;
 
-uniform DirectionLight light;  
-uniform Material material;
+    uniform vec3 objectColor;
+    uniform vec3 lightColor;
+    uniform vec3 viewPos;
+
+ in vec3 FragPos;
+ in vec3 Normal;
+ in vec2 TexCoords;
+uniform TextureMaterial material;
+
+
 void main()
 {    
     // ambient

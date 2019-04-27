@@ -1,6 +1,7 @@
 #include <model.h>
 #include <iostream>
 #include "file_utility.h"
+#include <glm/glm.hpp>
 
 void Model::Draw(Shader shader)
 {
@@ -81,7 +82,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 			vertex.Tangent = vector;
 		}
 		// bitangent
-		if (mesh->mTangents != nullptr)
+		if (mesh->mBitangents != nullptr)
 		{
 			vector.x = mesh->mBitangents[i].x;
 			vector.y = mesh->mBitangents[i].y;
@@ -94,9 +95,40 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
 		aiFace face = mesh->mFaces[i];
+		if(mesh->mTangents == nullptr || mesh->mBitangents == nullptr)
+		{
+			//Create tangents and bittangents
+			Vertex& v1 = vertices[face.mIndices[0]];
+			Vertex& v2 = vertices[face.mIndices[1]];
+			Vertex& v3 = vertices[face.mIndices[2]];
+
+			auto e1 = v2.Position-v1.Position;
+			auto e2 = v3.Position-v1.Position;
+
+			auto deltaUV1 = v2.TexCoords-v1.TexCoords;
+			auto deltaUV2 = v3.TexCoords-v1.TexCoords;
+
+			float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+			glm::vec3 tangent1 = (e1 * deltaUV2.y - e2 * deltaUV1.y)*f;
+			tangent1 = glm::normalize(tangent1);
+
+			glm::vec3 bitangent1 = (deltaUV1.x * e2 - deltaUV2.x * e1) * f;
+			bitangent1 = glm::normalize(bitangent1);
+
+			v1.Tangent = tangent1;
+			v2.Tangent = tangent1;
+			v3.Tangent = tangent1;
+
+			v1.Bitangent = bitangent1;
+			v2.Bitangent = bitangent1;
+			v3.Bitangent = bitangent1;
+
+		}
 		// retrieve all indices of the face and store them in the indices vector
 		for (unsigned int j = 0; j < face.mNumIndices; j++)
 			indices.push_back(face.mIndices[j]);
+
 	}
 	// process materials
 	aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];

@@ -1,32 +1,35 @@
-#version 330 core
-out vec4 FragColor;
 
-uniform vec3 objectColor;
-uniform vec3 lightColor;
-uniform vec3 viewPos;
+layout(location = 0) out vec4 FragColor;
 
-in vec3 FragPos;
-in vec3 Normal;
-in vec2 TexCoords;
-struct Material {
+struct TextureMaterial {
     sampler2D diffuse;
     sampler2D specular;
     float shininess;
-}; 
+};
+
 struct PointLight {
     vec3 position;
-  
+
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 
-	float constant;
+    float constant;
     float linear;
     float quadratic;
 };
 
-uniform PointLight light;  
-uniform Material material;
+uniform  vec3 objectColor;
+uniform vec3 lightColor;
+uniform vec3 viewPos;
+
+uniform PointLight light;
+in vec3 FragPos;
+in vec3 Normal;
+in vec2 TexCoords;
+uniform TextureMaterial material;
+
+
 void main()
 {    
 	float distance    = length(light.position - FragPos);

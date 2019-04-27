@@ -1,29 +1,27 @@
-#version 330 core
-out vec4 FragColor;
 
-uniform vec3 objectColor;
-uniform vec3 lightColor;
-uniform vec3 viewPos;
+layout(location = 0) out vec4 FragColor;
 
-in vec3 FragPos;
-in vec3 Normal;
-
-struct Material {
+struct TextureMaterial {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
     float shininess;
-}; 
+};
 struct Light {
     vec3 position;
-  
+
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 };
+uniform  vec3 objectColor;
+uniform vec3 lightColor;
+uniform vec3 viewPos;
+uniform Light light;
+uniform TextureMaterial material;
+in vec3 FragPos;
+in vec3 Normal;
 
-uniform Light light;  
-uniform Material material;
 void main()
 {    
     // ambient

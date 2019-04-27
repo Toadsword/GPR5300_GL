@@ -49,7 +49,7 @@ void HelloTransformDrawingProgram::Init()
     glGenBuffers(2, &VBO[0]);
     glGenBuffers(1, &EBO);
 
-    shaderProgram.Init(
+    shaderProgram.CompileSource(
             "shaders/03_hello_transform/transform.vert",
             "shaders/03_hello_transform/transform.frag"
     );

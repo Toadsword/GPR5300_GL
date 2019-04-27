@@ -1,30 +1,31 @@
-#version 330 core
-out vec4 FragColor;
+
+struct TextureMaterial {
+	sampler2D diffuse;
+	sampler2D specular;
+	float shininess;
+};
+struct FlashLight {
+	vec3 position;
+	vec3  direction;
+	float cutOff;
+	float outerCutOff;
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+layout(location = 0) out vec4 FragColor;
 
 uniform vec3 objectColor;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
+uniform FlashLight light;
 
 in vec3 FragPos;
 in vec3 Normal;
 in vec2 TexCoords;
-struct Material {
-    sampler2D diffuse;
-    sampler2D specular;
-    float shininess;
-}; 
-struct FlashLight {
-    vec3 position;
-	vec3  direction;
-    float cutOff;
-	float outerCutOff;
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-};
 
-uniform FlashLight light;  
-uniform Material material;
+
+uniform TextureMaterial material;
 void main()
 {    
     // ambient

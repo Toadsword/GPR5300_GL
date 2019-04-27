@@ -22,7 +22,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "file_utility.h"
 
-void Shader::Init(std::string vertexShaderPath, std::string fragmentShaderPath)
+void Shader::CompileSource(std::string vertexShaderPath, std::string fragmentShaderPath)
 {
 	const unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	const auto vertexShaderProgram = LoadFile(vertexShaderPath);
@@ -71,9 +71,75 @@ void Shader::Init(std::string vertexShaderPath, std::string fragmentShaderPath)
 	glDeleteShader(fragmentShader);
 }
 
+
+void Shader::CompileSpirV(std::string vertexShaderPath, std::string fragmentShaderPath)
+{
+    // Create an empty vertex shader handle
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const auto vertexShaderProgram = LoadBinaryFile(vertexShaderPath);
+    // Apply the vertex shader SPIR-V to the shader object.
+    glShaderBinary(1, &vertexShader, GL_SHADER_BINARY_FORMAT_SPIR_V, vertexShaderProgram.bin, vertexShaderProgram.size);
+
+    // Specialize the vertex shader.
+    //std::string vsEntrypoint = ...; // Get VS entry point name
+    glSpecializeShader(vertexShader, "main", 0, nullptr, nullptr);
+
+	delete[] vertexShaderProgram.bin;
+    ///Check success status of shader compilation
+    int  success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        return;
+    }
+
+    // Create an empty fragment shader handle
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    const auto fragmentShaderProgram = LoadBinaryFile(fragmentShaderPath);
+    // Apply the fragment shader SPIR-V to the shader object.
+    glShaderBinary(1, &fragmentShader, GL_SHADER_BINARY_FORMAT_SPIR_V, fragmentShaderProgram.bin, fragmentShaderProgram.size);
+
+    // Specialize the fragment shader.
+    //std::string vsEntrypoint = ...; // Get VS entry point name
+    glSpecializeShader(fragmentShader, "main", 0, nullptr, nullptr);
+
+    ///Check success status of shader compilation
+
+	delete[] fragmentShaderProgram.bin;
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+        return;
+    }
+
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+    //Check if shader program was linked correctly
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        std::cerr << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
+        return;
+    }
+
+
+	glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+}
+
+
 void Shader::Bind()
 {
 	glUseProgram(shaderProgram);
+	if (bindingFunction != nullptr)
+		bindingFunction();
 }
 
 int Shader::GetProgram()
@@ -154,6 +220,11 @@ void Shader::SetBasicMaterial(const BasicMaterial& basicMaterial)
 	SetVec3("material.specular", basicMaterial.specular);
 	SetFloat("material.shininess", basicMaterial.shininess);
 	
+}
+
+void Shader::SetBindingFunction(std::function<void()> bindingFunction)
+{
+	this->bindingFunction = bindingFunction;
 }
 
 unsigned gliCreateTexture(char const* filename)
@@ -284,7 +355,7 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	int width, height, nrChannels;
 
 	int reqComponents = 0;
-	if (extension == ".jpg")
+	if (extension == ".jpg" || extension == ".tga")
 		reqComponents = 3;
 	else if (extension == ".png")
 		reqComponents = 4;
@@ -310,7 +381,7 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 	}
-	if (extension == ".jpg")
+	if (extension == ".jpg" || extension == ".tga")
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 	}
@@ -327,6 +398,38 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	return texture;
 }
 
+unsigned LoadCubemap(std::vector<std::string>& faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++)
+	{
+		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cerr << "[Error] Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	return textureID;
+}
+
 const std::string& DrawingProgram::GetProgramName()
 {
 	return programName;
@@ -335,4 +438,49 @@ const std::string& DrawingProgram::GetProgramName()
 const std::vector<Shader*>& DrawingProgram::GetShaders()
 {
 	return shaders;
+}
+
+void Skybox::Init(std::vector<std::string>& faces)
+{
+	cubemapShader.CompileSource(
+		"shaders/16_hello_cubemaps/cubemaps.vert",
+		"shaders/16_hello_cubemaps/cubemaps.frag"
+	);
+	cubemapTexture = LoadCubemap(faces);
+
+	glGenVertexArrays(1, &cubeMapVAO);
+	glGenBuffers(1, &cubeMapVBO);
+
+	glBindVertexArray(cubeMapVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, cubeMapVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	// texture coord attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+}
+
+void Skybox::Draw()
+{
+	glDepthFunc(GL_LEQUAL);
+	cubemapShader.Bind();
+	cubemapShader.SetMat4("projection", projection);
+	cubemapShader.SetMat4("view", skyboxView);
+	glBindVertexArray(cubeMapVAO);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+	glDepthFunc(GL_LESS);
+}
+
+void Skybox::SetViewMatrix(const glm::mat4& view)
+{
+	skyboxView = glm::mat4(glm::mat3(view));
 }

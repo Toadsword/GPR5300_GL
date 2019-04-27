@@ -28,6 +28,8 @@
 #endif
 #include <cmath>
 #include <vector.h>
+#include <iostream>
+
 
 Vec2f::Vec2f(float x, float y): x(x), y(y)
 {

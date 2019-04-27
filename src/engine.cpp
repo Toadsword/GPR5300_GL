@@ -4,20 +4,45 @@
 #include <GL/glew.h>
 #include <engine.h>
 #include <graphics.h>
-#ifdef USE_SFML2
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/OpenGL.hpp>
-#include "imgui-SFML.h"
-#endif
 #ifdef USE_EMSCRIPTEN
 #include <emscripten.h> 
 #endif
 #include <chrono>
 #include "imgui.h"
+#ifdef USE_SDL2
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
+#endif
+#include <Remotery.h>
 
 Engine* Engine::enginePtr = nullptr;
+
+#ifdef WIN32
+extern "C"
+{
+	__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+}
+
+extern "C"
+{
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
+void GLAPIENTRY
+MessageCallback(GLenum source,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam)
+{
+	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+		type, severity, message);
+	fflush(stderr);
+}
 
 Engine::Engine()
 {
@@ -37,15 +62,17 @@ Engine::~Engine()
 
 void Engine::Init()
 {
+
+	rmt_CreateGlobalInstance(&rmt);
 #ifdef USE_SDL2
 	SDL_Init(SDL_INIT_VIDEO);
 	// Set our OpenGL version.
 // SDL_GL_CONTEXT_CORE gives us only the newer version, deprecated functions are disabled
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-	// 3.2 is part of the modern versions of OpenGL, but most video cards whould be able to run it
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, configuration.glMajorVersion);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, configuration.glMinorVersion);
+
 
 	// Turn on double buffering with a 24bit Z buffer.
 	// You may need to change this to 16 or 32 for your system
@@ -55,7 +82,7 @@ void Engine::Init()
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
 	window = SDL_CreateWindow(
 		configuration.windowName.c_str(),
@@ -80,6 +107,10 @@ void Engine::Init()
 	{
 		std::cerr << "Error loading GLEW: " << glewGetErrorString(err) << "\n";
 	}
+#if _DEBUG == 1
+	glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(MessageCallback, 0);
+#endif
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -92,7 +123,7 @@ void Engine::Init()
 
 	// Setup Platform/Renderer bindings
 	ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-	ImGui_ImplOpenGL3_Init("#version 330 core");
+	ImGui_ImplOpenGL3_Init("#version 450");
 
 	engineStartTime = timer.now();
 	previousFrameTime = engineStartTime;
@@ -112,6 +143,8 @@ void Engine::Init()
 
 void Engine::Loop()
 {
+	rmt_ScopedOpenGLSample(EngineLoopGPU);
+	rmt_ScopedCPUSample(EngineLoopCPU, 0);
 	std::chrono::high_resolution_clock::time_point currentFrame = timer.now();
 
 	dt = std::chrono::duration_cast<ms>(currentFrame - previousFrameTime).count() / 1000.0f;
@@ -173,6 +206,8 @@ void Engine::Loop()
 	}
 	if (enableImGui)
 	{
+		rmt_ScopedOpenGLSample(RenderImGuiGPU);
+		rmt_ScopedCPUSample(RenderImGuiCPU, 0);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
@@ -182,6 +217,7 @@ void Engine::Loop()
 
 void Engine::GameLoop()
 {
+	rmt_BindOpenGL();
 	running = true;
 	engineStartTime = timer.now();
 	previousFrameTime = engineStartTime;
@@ -195,7 +231,6 @@ void Engine::GameLoop()
 		Loop();
 	}
 #endif
-
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
@@ -207,10 +242,14 @@ void Engine::GameLoop()
 
 	// Shutdown SDL 2
 	SDL_Quit();
+
+
 }
 #endif
 void Engine::UpdateUi()
 {
+	rmt_ScopedOpenGLSample(DrawImGuiGPU);
+	rmt_ScopedCPUSample(DrawImGuiCPU, 0);
 	auto& config = GetConfiguration();
 	const auto windowSize = Vec2f(config.screenWidth, config.screenHeight);
 	if (debugInfo)
@@ -308,6 +347,11 @@ float Engine::GetTimeSinceInit()
 void Engine::AddDrawingProgram(DrawingProgram* drawingProgram)
 {
 	drawingPrograms.push_back(drawingProgram);
+}
+
+std::vector<DrawingProgram*>& Engine::GetDrawingPrograms()
+{
+	return drawingPrograms;
 }
 
 Engine* Engine::GetPtr()

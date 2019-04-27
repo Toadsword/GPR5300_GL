@@ -85,9 +85,9 @@ void HelloTriangleDrawingProgram::Init()
 #ifdef EBO_DOUBLE_TRIANGLE
 	glGenBuffers(1, &EBO);
 #endif
-	
-	shaderProgram.Init("shaders/01_hello_triangle/triangle.vert", "shaders/01_hello_triangle/triangle.frag");
 
+    shaderProgram.CompileSource("shaders/01_hello_triangle/triangle.vert", "shaders/01_hello_triangle/triangle.frag");
+    
 	glGenVertexArrays(1, &VAO);
 	// 1. bind Vertex Array Object
 	glBindVertexArray(VAO);
@@ -115,9 +115,8 @@ void HelloTriangleDrawingProgram::Draw()
 	const float timeValue = Engine::GetPtr()->GetTimeSinceInit();
 
 	const float colorValue = (sin(timeValue) + 1.0f) / 2.0f;
-	const int vertexColorLocation = glGetUniformLocation(shaderProgram.GetProgram(), "colorCoeff");
+	shaderProgram.SetFloat("colorCoeff", colorValue);
 	glUseProgram(shaderProgram.GetProgram());
-	glUniform1f(vertexColorLocation, colorValue);
 
 	glBindVertexArray(VAO);
 #ifndef EBO_DOUBLE_TRIANGLE

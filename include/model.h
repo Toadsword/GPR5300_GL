@@ -17,7 +17,7 @@ public:
 	std::string directory;
 	bool gammaCorrection;
 	/*  Functions   */
-	void Init(char *path)
+	void Init(const char *path)
 	{
 		loadModel(path);
 	}

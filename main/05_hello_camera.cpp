@@ -124,7 +124,7 @@ void HelloStencilDrawingProgram::Init()
 {
 	programName = "HelloCamera";
 	shaders.push_back(&cubeShaderProgram);
-    cubeShaderProgram.Init("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
+    cubeShaderProgram.CompileSource("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
 
 #ifdef CAMERA_CONTROLS
 	Engine* engine = Engine::GetPtr();

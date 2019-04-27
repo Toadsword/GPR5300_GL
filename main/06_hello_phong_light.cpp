@@ -96,12 +96,12 @@ void HelloLightDrawingProgram::Init()
 	lastX = config.screenWidth / 2.0f;
 	lastY = config.screenHeight / 2.0f;
 
-	objShaderProgram.Init(
-		"shaders/06_hello_phong_light/light.vert",
-		"shaders/06_hello_phong_light/light.frag");
-	lampShaderProgram.Init(
-		"shaders/06_hello_phong_light/lamp.vert",
-		"shaders/06_hello_phong_light/lamp.frag");
+    objShaderProgram.CompileSource(
+            "shaders/06_hello_phong_light/light.vert",
+            "shaders/06_hello_phong_light/light.frag");
+    lampShaderProgram.CompileSource(
+            "shaders/06_hello_phong_light/lamp.vert",
+            "shaders/06_hello_phong_light/lamp.frag");
 	shaders.push_back(&objShaderProgram);
 	shaders.push_back(&lampShaderProgram);
 
