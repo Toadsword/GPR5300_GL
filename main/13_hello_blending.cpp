@@ -5,7 +5,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "camera.h"
 
 #define TRANSPARENT
 #define BLENDING
@@ -21,12 +20,9 @@ public:
 	void ProcessInput();
 
 private:
-	Camera camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f));
-
 	Shader windowShaderProgram;
 	Shader grassShaderProgram;
-	float lastX = 0;
-	float lastY = 0;
+
 	unsigned VAO;
 	unsigned grassTexture;
 	unsigned windowTexture;
@@ -80,10 +76,7 @@ private:
 void HelloBlendingDrawingProgram::Init()
 {
 	programName = "HelloBlending";
-	Engine* engine = Engine::GetPtr();
-	auto& config = engine->GetConfiguration();
-	lastX = config.screenWidth / 2.0f;
-	lastY = config.screenHeight / 2.0f;
+
 	shaders.push_back(&grassShaderProgram);
 	shaders.push_back(&windowShaderProgram);
 #ifdef BLENDING
@@ -151,6 +144,7 @@ void HelloBlendingDrawingProgram::Draw()
 	glEnable(GL_DEPTH_TEST);
 	Engine* engine = Engine::GetPtr();
 	Configuration& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 100.0f);
@@ -218,6 +212,9 @@ void HelloBlendingDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
+	auto& camera = engine->GetCamera();
+	float dt = engine->GetDeltaTime();
+	float cameraSpeed = 1.0f;
 
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))
@@ -240,16 +237,9 @@ void HelloBlendingDrawingProgram::ProcessInput()
 
 	auto mousePos = inputManager.GetMousePosition();
 
-	float xOffset = mousePos.x - lastX;
-	float yOffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
-
-	camera.ProcessMouseMovement(xOffset, yOffset);
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
 	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
-
-
 }
 
 
