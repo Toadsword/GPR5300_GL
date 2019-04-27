@@ -62,6 +62,7 @@ void Scene::Init()
 		{
 			directionLight.direction = ConvertVec3FromJson(directionLightJson["direction"]);
 			directionLight.intensity = directionLightJson["intensity"];
+			directionLight.position = ConvertVec3FromJson(directionLightJson["position"]);
 		}
 		this->directionLight = directionLight;
 
