@@ -55,7 +55,7 @@ public:
 	InputManager& GetInputManager();
 	Camera& GetCamera();
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
-	std::vector<DrawingProgram*>& GetDrawingPrograms();
+	std::vector<DrawingProgram*>& GetDrawingPrograms() { return drawingPrograms; };
 
 
 	static Engine* GetPtr();
