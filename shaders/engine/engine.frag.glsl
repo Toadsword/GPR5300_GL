@@ -19,6 +19,7 @@ struct VS_OUT
 struct EnginePointLight
 {
 	vec3 position;
+	vec3 color;
 	float constant;
     float linear;
     float quadratic;
@@ -30,18 +31,20 @@ vec3 calculate_point_light(EnginePointLight light, VS_OUT fs_in, EngineMaterial 
 {
 
 	float distance    = length(light.position - fs_in.FragPos);
-	float attenuation = clamp(light.distance / (light.constant + light.linear * distance + 
-    		    light.quadratic * (distance * distance)), 0.0,1.0); 
+	float attenuation = min(light.distance / (light.constant + light.linear * distance + 
+    		    light.quadratic * (distance * distance)), 1.0); 
+	if(attenuation < 0.01)
+		attenuation = 0.0;
 
 	vec3 lightDir = normalize(light.position - fs_in.FragPos);
     float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
+    vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords))* light.color;
 
 	vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
     vec3 reflectDir = reflect(-lightDir, normal);  
 	vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-    vec3 specular = spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));
+    vec3 specular = spec * vec3(texture(material.texture_specular1, fs_in.TexCoords))* light.color;
 
 	return light.intensity * attenuation * (diffuse + specular);
 }
@@ -50,6 +53,7 @@ struct EngineDirectionLight
 {
     vec3 direction;
 	float intensity;
+	vec3 color;
 };
 
 vec3 calculate_directional_light(EngineDirectionLight light, VS_OUT fs_in, EngineMaterial material, vec3 normal)
@@ -58,14 +62,14 @@ vec3 calculate_directional_light(EngineDirectionLight light, VS_OUT fs_in, Engin
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(-light.direction);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
+    vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords)) * light.color;
     
     // specular
     vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
     vec3 reflectDir = reflect(-lightDir, norm);  
 	vec3 halfwayDir = normalize(lightDir + viewDir);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-	vec3 specular = spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));
+	vec3 specular = spec * vec3(texture(material.texture_specular1, fs_in.TexCoords))* light.color;
         
     return light.intensity * (diffuse + specular);
 }
@@ -73,6 +77,7 @@ vec3 calculate_directional_light(EngineDirectionLight light, VS_OUT fs_in, Engin
 struct EngineSpotLight {
 	vec3 position;
 	vec3  direction;
+	vec3 color;
 	float cutOff;
 	float outerCutOff;
 	float intensity;
@@ -88,14 +93,14 @@ vec3 calculate_spot_light(EngineSpotLight light, VS_OUT fs_in, EngineMaterial ma
 	// diffuse 
 	vec3 norm = normalize(normal);
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords));
+	vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords))* light.color;
     
 	// specular
 	vec3 viewDir = normalize(fs_in.ViewPos - fs_in.FragPos);
 	vec3 reflectDir = reflect(-lightDir, norm);  
 	vec3 halfwayDir = normalize(lightDir + viewDir);
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-	vec3 specular =  spec * vec3(texture(material.texture_specular1, fs_in.TexCoords));
+	vec3 specular =  spec * vec3(texture(material.texture_specular1, fs_in.TexCoords))* light.color;
     return light.intensity * intensity * (diffuse + specular);
 }
 

@@ -11,6 +11,7 @@ public:
 	virtual void Bind(Shader& shader, int index = 0) = 0;
 	bool enable = false;
 	glm::vec3 position;
+	glm::vec3 color = glm::vec3(1,1,1);
 };
 
 class DirectionLight : public Light
