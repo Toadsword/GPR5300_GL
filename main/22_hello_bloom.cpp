@@ -96,17 +96,13 @@ void HelloHdrDrawingProgram::Init()
 
 	for(int i = 0; i < 5;i++)
 	{
-		const glm::vec3 colors [5] = 
-		{
-			glm::vec3(1,0,1),
-			glm::vec3(1,1,0),
-			glm::vec3(0,1,0),
-			glm::vec3(0,0,1),
-			glm::vec3(0,1,1),
 
-		};
 		lights[i].position = glm::vec3(RandomRange(-128, 128) / 256.0f, RandomRange(-128, 128) / 256.0f, 7.5f-i*5);
-		lights[i].color = colors[i];
+		lights[i].color = glm::vec3(
+		RandomRange(0,256)/256.0f,
+		RandomRange(0,256)/256.0f,
+		RandomRange(0,256)/256.0f
+			);
 		lights[i].intensity = 0.5f;
 		lights[i].distance = 1.0f;
 	}
