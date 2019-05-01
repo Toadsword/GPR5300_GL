@@ -17,6 +17,7 @@ public:
 	void Init() override;
 	void Draw() override;
 	void Destroy() override;
+	void ProcessInput();
 private:
 
 	static const int cubeLength = 10;
@@ -121,9 +122,9 @@ void HelloLightCastersDrawingProgram::Init()
         objShaderProgram.CompileSource(
                 "shaders/09_hello_light_casters/material.vert",
                 "shaders/09_hello_light_casters/material_point.frag");
-            lampShaderProgram.CompileSource(
-                    "shaders/09_hello_light_casters/lamp.vert",
-                    "shaders/09_hello_light_casters/lamp.frag");
+        lampShaderProgram.CompileSource(
+                "shaders/09_hello_light_casters/lamp.vert",
+                "shaders/09_hello_light_casters/lamp.frag");
 
 		shaders.push_back(&lampShaderProgram);
 		break;
@@ -275,6 +276,39 @@ void HelloLightCastersDrawingProgram::Draw()
 void HelloLightCastersDrawingProgram::Destroy()
 {
 }
+
+void HelloLightCastersDrawingProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+}
+
 
 int main(int argc, char** argv)
 {

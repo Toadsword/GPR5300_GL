@@ -9,12 +9,13 @@ public:
 	void Init() override;
 	void Draw() override;
 	void Destroy() override;
+	void ProcessInput();
 private:
 
 	static const int cubeLength = 10;
 	Shader objShaderProgram;
 	Shader lampShaderProgram;
-	//pos + normal
+	//pos + normal + texture coords
 	float vertices[8 * 36] = {
 		// positions          // normals           // texture coords
 		-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
@@ -149,7 +150,7 @@ void HelloLightCastersDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 
-	lightPos = glm::vec3(5.0f*sin(2.0f*M_PI / 3.0f*engine->GetTimeSinceInit()), lightPos.y, 2.0f*cos(2.0f*M_PI / 3.0f*engine->GetTimeSinceInit()));
+	lightPos = glm::vec3(5.0f*sin(2.0f*M_PI / engine->GetTimeSinceInit()), lightPos.y, 2.0f*cos(2.0f*M_PI / engine->GetTimeSinceInit()));
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -209,6 +210,44 @@ void HelloLightCastersDrawingProgram::Draw()
 
 void HelloLightCastersDrawingProgram::Destroy()
 {
+}
+
+void HelloLightCastersDrawingProgram::ProcessInput()
+{
+	Engine* engine = Engine::GetPtr();
+	auto& inputManager = engine->GetInputManager();
+
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	float xoffset = mousePos.x - lastX;
+	float yoffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
+	lastX = mousePos.x;
+	lastY = mousePos.y;
+
+	camera.ProcessMouseMovement(xoffset, yoffset);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+
 }
 
 

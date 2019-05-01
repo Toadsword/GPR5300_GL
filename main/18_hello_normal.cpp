@@ -46,7 +46,6 @@ void HelloNormalDrawingProgram::Init()
 
 	diffuseMap = stbCreateTexture("data/sprites/brickwall.jpg");
 	normalMap = stbCreateTexture("data/sprites/brickwall_normal.jpg");
-
 }
 
 void HelloNormalDrawingProgram::ProcessInput()
@@ -54,7 +53,6 @@ void HelloNormalDrawingProgram::ProcessInput()
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
 	auto& camera = engine->GetCamera();
-	camera.Position = glm::vec3(0, 0, 4);
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
 
@@ -94,7 +92,7 @@ void HelloNormalDrawingProgram::Draw()
 
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::rotate(model, engine->GetTimeSinceInit()*glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	const glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 
 	Shader& currentShader = enableNormal?normalShader:withoutNormalShader;
     currentShader.Bind();

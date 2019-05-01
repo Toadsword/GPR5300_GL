@@ -18,6 +18,7 @@ public:
 	void Init() override;
 	void Draw() override;
 	void Destroy() override;
+	void ProcessInput();
 
 private:
 	Shader modelShaderProgram;
@@ -36,7 +37,7 @@ void HelloOutlineDrawingProgram::Init()
 	// "data/models/nanosuit2/nanosuit.obj"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
-	model.Init("data/models/nanosuit2/nanosuit.obj");
+	model.Init("data/models/nanosuit2/nanosuit.blend");
 }
 
 void HelloOutlineDrawingProgram::Draw()
@@ -63,6 +64,13 @@ void HelloOutlineDrawingProgram::Draw()
 	
 	this->model.Draw(modelShaderProgram);
 
+	model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, -20.75f, 20.0f)); // translate it down so it's at the center of the scene
+	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
+
+	modelShaderProgram.SetMat4("model", model);
+
+	this->model.Draw(modelShaderProgram);
 }
 
 void HelloOutlineDrawingProgram::Destroy()
@@ -70,6 +78,37 @@ void HelloOutlineDrawingProgram::Destroy()
 }
 
 
+void HelloOutlineDrawingProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+}
 
 
 int main(int argc, char** argv)

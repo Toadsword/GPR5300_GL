@@ -21,9 +21,9 @@ void main()
     );
 
 	float kernel[9] = float[](
-    1,1,1,
-	1,-8,1,
-	1,1,1
+		1,1,1,
+		1,-8,1,
+		1,1,1
 	);
     
     vec3 sampleTex[9];

@@ -21,6 +21,8 @@ public:
 	void Init() override;
 	void Draw() override;
 	void Destroy() override;
+
+	void ProcessInput();
 private:
 	Shader cubeShaderProgram;
 	Shader floorShaderProgram;
@@ -213,7 +215,7 @@ void HelloStencilDrawingProgram::Draw()
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 	glUniform3f(glGetUniformLocation(cubeShaderProgram.GetProgram(), "overrideColor"), 0.3f, 0.3f, 0.3f);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glUniform3f(glGetUniformLocation(cubeShaderProgram.GetProgram(), "overrideColor"), 1.0f, 1.0f, 1.0f);
+
 #ifdef USE_STENCIL
 	glDisable(GL_STENCIL_TEST);
 #endif
@@ -224,6 +226,39 @@ void HelloStencilDrawingProgram::Destroy()
 	glDeleteVertexArrays(1, &cubeVAO);
 	glDeleteBuffers(1, &cubeVBO);
 }
+
+void HelloStencilDrawingProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+}
+
 
 int main(int argc, char** argv)
 {

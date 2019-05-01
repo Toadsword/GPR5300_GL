@@ -48,26 +48,11 @@ private:
 	const size_t verticesCount = terrainWidth * terrainHeight;
 	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
 
-	glm::vec3 cameraPos = glm::vec3(0.0f, 3.0f, 3.0f);
-	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-	float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
-	float pitch = 0.0f;
-	float fov = 45.0f;
-	float fovScroolSpeed = 100.0f;
-	float lastX = 800.0f / 2.0f;
-	float lastY = 600.0 / 2.0f;
 };
 
 void HelloTerrainDrawingProgram::Init()
 {
 	programName = "HelloTerrain";
-	
-	Engine* engine = Engine::GetPtr();
-	auto& config = engine->GetConfiguration();
-	lastX = config.screenWidth / 2.0f;
-	lastY = config.screenHeight / 2.0f;
 
 	vertices = (float*)calloc(3*verticesCount, sizeof(float));//vec3, so 3 floats
 	texCoords = (float*)calloc(2*verticesCount, sizeof(float));//vec2, so 2 floats
@@ -130,8 +115,8 @@ void HelloTerrainDrawingProgram::Init()
 	sfTerrainTexture.setSmooth(true);
 	terrainTexture = sfTerrainTexture.getNativeHandle();
 #else
-	terrainHeightMap = stbCreateTexture("data/terrain/terrain_height2048.png",true, false);
-	terrainTexture = stbCreateTexture("data/terrain/terrain_texture2048.png", true, false);
+	terrainHeightMap = stbCreateTexture("data/terrain/tt_2_height.png",true, false);
+	terrainTexture = stbCreateTexture("data/terrain/tt_2_texture.png", true, false);
 #endif
 
 	glGenBuffers(2, &VBO[0]);
@@ -161,19 +146,18 @@ void HelloTerrainDrawingProgram::Draw()
 {
 
 	ProcessInput();
+
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glm::mat4 view = glm::mat4(1.0f);
-	
-	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-	view = glm::rotate(view, 45.0f, glm::vec3(0, 1, 0));
+	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 model = glm::mat4(1.0f);
 	
-	glm::mat4 projection = glm::perspective(glm::radians(fov), (float)config.screenWidth / config.screenHeight, 0.1f, 1000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 1000.0f);
 
 	shaderProgram.Bind();
 	const int viewLoc = glGetUniformLocation(shaderProgram.GetProgram(), "view");
@@ -202,84 +186,38 @@ void HelloTerrainDrawingProgram::Draw()
 	glBindVertexArray(0);
 }
 
-
 void HelloTerrainDrawingProgram::ProcessInput()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& inputManager = engine->GetInputManager();
+	auto& camera = engine->GetCamera();
 	float dt = engine->GetDeltaTime();
 	float cameraSpeed = 1.0f;
-#ifdef USE_SFML2
-	if (inputManager.GetButton(sf::Keyboard::W))
-	{
-		cameraPos += cameraSpeed * cameraFront * dt;
-	}
-	if (inputManager.GetButton(sf::Keyboard::S))
-	{
-		cameraPos -= cameraSpeed * cameraFront * dt;
-	}
-	if (inputManager.GetButton(sf::Keyboard::A))
-	{
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * dt;
-	}
-	if (inputManager.GetButton(sf::Keyboard::D))
-	{
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
-	}
-#endif
 
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))
 	{
-		cameraPos += cameraSpeed * cameraFront * dt;
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
 	}
 	if (inputManager.GetButton(SDLK_s))
 	{
-		cameraPos -= cameraSpeed * cameraFront * dt;
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
 	}
 	if (inputManager.GetButton(SDLK_a))
 	{
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * dt;
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
 	}
 	if (inputManager.GetButton(SDLK_d))
 	{
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
 	}
 #endif
 
-	auto mousePos = inputManager.GetMousePosition();
+	const auto mousePos = inputManager.GetMousePosition();
 
-	float xoffset = mousePos.x - lastX;
-	float yoffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
-	float sensitivity = 0.1f; // change this value to your liking
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	yaw += xoffset;
-	pitch += yoffset;
-
-	// make sure that when pitch is out of bounds, screen doesn't get flipped
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 front(0.0f, 0.0f, 0.0f);
-	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front.y = sin(glm::radians(pitch));
-	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(front);
-
-
-	if (fov >= 1.0f && fov <= 45.0f)
-		fov -= inputManager.GetMouseWheelDelta() * engine->GetDeltaTime() * fovScroolSpeed;
-	if (fov <= 1.0f)
-		fov = 1.0f;
-	if (fov >= 45.0f)
-		fov = 45.0f;
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }
 
 

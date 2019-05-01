@@ -33,6 +33,8 @@ public:
 	void Destroy() override;
 	void UpdateUi() override;
 
+	void ProcessInput();
+
 private:
 	Shader frameBufferShaderProgram;
 	Shader cubeShaderProgram;
@@ -105,7 +107,7 @@ private:
 	unsigned int quadVAO, quadVBO;
 	glm::mat4 projection;
 	glm::mat4 view;
-	PostProcessFx postProcessingFx = PostProcessFx::DistanceFog;
+	PostProcessFx postProcessingFx = PostProcessFx::None;
 	float fogColor[3] = {0.3f,0.3f,0.3f};
 	float fogZFar = 100.0f;
 };
@@ -321,6 +323,38 @@ void HelloPostProcessDrawingProgram::UpdateUi()
 	ImGui::Separator();
 	ImGui::ColorEdit3("fogColor", fogColor);
 	ImGui::SliderFloat("zFar", &fogZFar, 1.0f, 100.0f);
+}
+
+void HelloPostProcessDrawingProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }
 
 

@@ -16,11 +16,8 @@
 #include "model.h"
 
 const float pixelPerUnit = 100.0f;
-#define CAMERA_CONTROLS
 #define COUNTER_CLOCK_WISE_CUBE
-#define USE_MODEL
-
-
+//#define USE_MODEL
 
 class HelloCullingDrawingProgram : public DrawingProgram
 {
@@ -138,18 +135,7 @@ private:
 	std::vector<glm::vec3> cubePositions;
 
 	std::vector<float> cubeInitialAngle;
-#ifdef CAMERA_CONTROLS
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-	glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
-	float pitch = 0.0f;
-	float fov = 45.0f;
-	float fovScroolSpeed = 100.0f;
-	float lastX = 800.0f / 2.0;
-	float lastY = 600.0 / 2.0;
-#endif
 	int cubeLength = 10'000;
 	float near = 0.1f;
 	float far = 100.0f;
@@ -166,13 +152,7 @@ void HelloCullingDrawingProgram::Init()
 {
 	srand(0);
 	programName = "HelloCulling";
-	
-#ifdef CAMERA_CONTROLS
-	Engine* engine = Engine::GetPtr();
-	auto& config = engine->GetConfiguration();
-	lastX = config.screenWidth / 2.0f;
-	lastY = config.screenHeight / 2.0f;
-#endif
+
 #ifdef USE_MODEL
     modelShaderProgram.CompileSource(
             "shaders/10_hello_model/model.vert",
@@ -181,10 +161,10 @@ void HelloCullingDrawingProgram::Init()
 	// "data/models/nanosuit/scene.fbx"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
-	model.Init("data/models/nanosuit2/nanosuit.obj");
+	model.Init("data/models/nanosuit2/nanosuit.blend");
 #else
 	shaders.push_back(&cubeShaderProgram);
-	cubeShaderProgram.Init("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
+	cubeShaderProgram.CompileSource("shaders/05_hello_camera/camera.vert", "shaders/05_hello_camera/camera.frag");
 
 	textureWall = gliCreateTexture("data/sprites/wall.dds");
 	glGenVertexArrays(1, &cubeVAO);
@@ -225,6 +205,7 @@ void HelloCullingDrawingProgram::Draw()
 
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 
 	glEnable(GL_DEPTH_TEST);
 	if (enableFaceCulling)
@@ -233,15 +214,8 @@ void HelloCullingDrawingProgram::Draw()
 		glCullFace(GL_BACK);
 		glFrontFace(GL_CCW);
 	}
-	glm::mat4 view = glm::mat4(1.0f);
-#ifdef CAMERA_CONTROLS
-	view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-#else
-	float radius = 10.0f;
-	float camX = sin(engine->GetTimeSinceInit()) * radius;
-	float camZ = cos(engine->GetTimeSinceInit()) * radius;
-	view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-#endif
+	glm::mat4 view = camera.GetViewMatrix();
+
 #ifdef ORTHOGRAPHIC
 	glm::mat4 projection = glm::ortho(
 		-(float)config.screenSizeX / pixelPerUnit / 2.0f,
@@ -250,7 +224,7 @@ void HelloCullingDrawingProgram::Draw()
 		(float)config.screenSizeY / pixelPerUnit / 2.0f,
 		0.1f, 100.0f);
 #else
-	glm::mat4 projection = glm::perspective(glm::radians(fov), 
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f),
 		(float)config.screenWidth / config.screenHeight, near, far);
 #endif
 
@@ -321,80 +295,34 @@ void HelloCullingDrawingProgram::UpdateUi()
 
 void HelloCullingDrawingProgram::ProcessInput()
 {
-	Engine* engine = Engine::GetPtr();
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
 	auto& inputManager = engine->GetInputManager();
-	float dt = engine->GetDeltaTime();
-	float cameraSpeed = 1.0f;
-#ifdef USE_SFML2
-	if (inputManager.GetButton(sf::Keyboard::W))
-	{
-		cameraPos += cameraSpeed * cameraFront * dt;
-	}
-	if (inputManager.GetButton(sf::Keyboard::S))
-	{
-		cameraPos -= cameraSpeed * cameraFront * dt;
-	}
-	if (inputManager.GetButton(sf::Keyboard::A))
-	{
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * dt;
-	}
-	if (inputManager.GetButton(sf::Keyboard::D))
-	{
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
-	}
-#endif
 
 #ifdef USE_SDL2
 	if (inputManager.GetButton(SDLK_w))
 	{
-		cameraPos += cameraSpeed * cameraFront * dt;
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
 	}
 	if (inputManager.GetButton(SDLK_s))
 	{
-		cameraPos -= cameraSpeed * cameraFront * dt;
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
 	}
 	if (inputManager.GetButton(SDLK_a))
 	{
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed * dt;
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
 	}
 	if (inputManager.GetButton(SDLK_d))
 	{
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed* dt;
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
 	}
 #endif
+
 	auto mousePos = inputManager.GetMousePosition();
 
-	float xoffset = mousePos.x - lastX;
-	float yoffset = lastY - mousePos.y; // reversed since y-coordinates go from bottom to top
-	lastX = mousePos.x;
-	lastY = mousePos.y;
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
 
-	float sensitivity = 0.1f; // change this value to your liking
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	yaw += xoffset;
-	pitch += yoffset;
-
-	// make sure that when pitch is out of bounds, screen doesn't get flipped
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 front(0.0f, 0.0f, 0.0f);
-	front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	front.y = sin(glm::radians(pitch));
-	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(front);
-
-
-	if (fov >= 1.0f && fov <= 45.0f)
-		fov -= inputManager.GetMouseWheelDelta() * engine->GetDeltaTime() * fovScroolSpeed;
-	if (fov <= 1.0f)
-		fov = 1.0f;
-	if (fov >= 45.0f)
-		fov = 45.0f;
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }
 
 

@@ -2,9 +2,22 @@
 #include <graphics.h>
 #include "model.h"
 #include "imgui.h"
+#include <Remotery.h>
 
+#define REFRACTION
 
-//#define REFRACTION
+#define SQRT // else Asin
+//#define ASIN // else None
+
+//TIMES : (pour 100 model - DrawCubemaps)
+// SQRT : ~1.8, 2.2ms
+// ASIN : ~2.0, 2.4ms
+
+//TIMES : (pour 1000 model - DrawCubemaps)
+// SQRT : ~17.5, 17.8ms
+// ASIN : ~17.5, 18ms
+
+// --> Pas de grande diff, a moins que j'ai fait de la merde :D
 
 #ifdef REFRACTION
 float refractiveIndexes []=
@@ -40,6 +53,8 @@ public:
 	void Draw() override;
 	void Destroy() override;
 	void UpdateUi() override;
+
+	void ProcessInput();
 private:
 	unsigned int cubemapTexture;
 	Shader cubemapShader;
@@ -143,8 +158,10 @@ private:
 	int diffuseMapTexture = 0;
 	int specularMapTexture = 0;
 #ifdef REFRACTION
-	int currentRefractiveMaterial = (int)RefractriveMaterial::Water;
+	int currentRefractiveMaterial = (int)RefractriveMaterial::Glass;
 #endif
+
+	int numModels = 1000;
 };
 
 void HelloCubemapsDrawingProgram::Init()
@@ -223,11 +240,19 @@ void HelloCubemapsDrawingProgram::Init()
 	specularMapTexture = stbCreateTexture("data/sprites/container2_specular.png");
 	
 
-	model.Init("data/models/nanosuit2/nanosuit.obj");
+	model.Init("data/models/nanosuit2/nanosuit.blend");
 	modelShaderProgram.CompileSource(
 		"shaders/16_hello_cubemaps/model_refl.vert",
 #ifdef REFRACTION
+	#ifdef SQRT
+		"shaders/16_hello_cubemaps/model_refr_sqrt.frag"
+	#else
+		#ifdef ASIN
+		"shaders/16_hello_cubemaps/model_refr_asin.frag"
+		#else
 		"shaders/16_hello_cubemaps/model_refr.frag"
+		#endif
+	#endif
 #else
 		"shaders/16_hello_cubemaps/model_refl.frag"
 #endif
@@ -240,6 +265,7 @@ void HelloCubemapsDrawingProgram::Init()
 
 void HelloCubemapsDrawingProgram::Draw()
 {
+	rmt_ScopedOpenGLSample(DrawCubemaps);
 	ProcessInput();
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
@@ -256,11 +282,7 @@ void HelloCubemapsDrawingProgram::Draw()
 
 	//Show model
 	modelShaderProgram.Bind();
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
-	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
 	
-	modelShaderProgram.SetMat4("model", model);
 	modelShaderProgram.SetMat4("projection", projection);
 	modelShaderProgram.SetMat4("view", view);
 
@@ -272,7 +294,16 @@ void HelloCubemapsDrawingProgram::Draw()
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 	modelShaderProgram.SetInt("skybox", 3);
-	this->model.Draw(modelShaderProgram);
+	for(int i = 0; i < numModels; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f * i, -1.75f, -2.0f * i)); // translate it down so it's at the center of the scene
+		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
+
+		modelShaderProgram.SetMat4("model", model);
+
+		this->model.Draw(modelShaderProgram);
+	}
 
 	// cube
 	glm::mat4 cubeModel = glm::mat4(1.0f);
@@ -312,6 +343,38 @@ void HelloCubemapsDrawingProgram::UpdateUi()
 #ifdef REFRACTION
 	ImGui::Combo("combo", &currentRefractiveMaterial, refractriveMaterialName, IM_ARRAYSIZE(refractriveMaterialName));
 #endif
+}
+
+void HelloCubemapsDrawingProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }
 
 int main(int argc, char** argv)

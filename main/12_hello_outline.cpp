@@ -20,6 +20,7 @@ public:
 	void Draw() override;
 	void Destroy() override;
 	void UpdateUi() override;
+	void ProcessInput();
 
 private:
 	Shader modelShaderProgram;
@@ -48,7 +49,7 @@ void HelloOutlineDrawingProgram::Init()
 	// "data/models/nanosuit/scene.fbx"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
-	model.Init("data/models/nanosuit2/nanosuit.obj");
+	model.Init("data/models/nanosuit2/nanosuit.blend");
 }
 
 void HelloOutlineDrawingProgram::Draw()
@@ -126,6 +127,37 @@ void HelloOutlineDrawingProgram::UpdateUi()
 }
 
 
+void HelloOutlineDrawingProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+}
 
 int main(int argc, char** argv)
 {

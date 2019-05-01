@@ -9,6 +9,7 @@ public:
 	void Init() override;
 	void Draw() override;
 	void Destroy() override;
+	void ProcessInput();
 private:
 
 	static const int cubeLength = 10;
@@ -200,6 +201,38 @@ void HelloLightCastersDrawingProgram::Draw()
 
 void HelloLightCastersDrawingProgram::Destroy()
 {
+}
+
+void HelloLightCastersDrawingProgram::ProcessInput()
+{
+	Engine* engine = Engine::GetPtr();
+	auto& inputManager = engine->GetInputManager();
+	auto& camera = engine->GetCamera();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
 }
 
 
