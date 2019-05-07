@@ -30,6 +30,7 @@ private:
 
 	unsigned terrainTexture = 0;
 	unsigned terrainHeightMap = 0;
+	unsigned terrainNormalMap = 0;
 #ifdef USE_SFML2
 	sf::Texture sfTerrainTexture;
 	sf::Texture sfTerrainHeightMap;
@@ -114,8 +115,9 @@ void HelloTerrainDrawingProgram::Init()
 	sfTerrainTexture.setSmooth(true);
 	terrainTexture = sfTerrainTexture.getNativeHandle();
 #else
-	terrainHeightMap = stbCreateTexture("data/terrain/plains_height.png",true, false);
-	terrainTexture = stbCreateTexture("data/terrain/plains_texture.png", true, false);
+	terrainHeightMap = stbCreateTexture("data/terrain/plains/HeightMap.png",true, false);
+	terrainTexture = stbCreateTexture("data/terrain/plains/texture.png", true, false);
+	terrainNormalMap = stbCreateTexture("data/terrain/plains/NormalMap.png", true, false);
 #endif
 
 	glGenBuffers(2, &VBO[0]);
@@ -174,10 +176,13 @@ void HelloTerrainDrawingProgram::Draw()
     glUniform1f(heightConstLoc, terrainOriginY);
 	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture1"), 0);
 	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture2"), 1);
+	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture3"), 2);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, terrainTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
 
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, faceCount * 3, GL_UNSIGNED_INT, 0);

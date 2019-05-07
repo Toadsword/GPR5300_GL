@@ -11,6 +11,7 @@ uniform float heightResolution;
 uniform float heightOrigin;
 
 uniform sampler2D texture1;
+uniform sampler2D texture3;
 
 void main()
 {

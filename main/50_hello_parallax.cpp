@@ -19,6 +19,7 @@ private:
 	unsigned int heightMap;
 	Shader normalShader;
 	Shader parallaxShader;
+	Cube cube;
 	Plane plane;
 	float lightPos[3] = { 0,0,-9.5 };
 
@@ -29,7 +30,7 @@ private:
 
 void HelloParallaxDrawingProgram::Init()
 {
-	programName = "Normal Map";
+	programName = "Parallax Map";
 
 	normalShader.CompileSource(
 		"shaders/50_hello_parallax/normal.vert",
@@ -41,6 +42,7 @@ void HelloParallaxDrawingProgram::Init()
 	);
 	shaders.push_back(&normalShader);
 	shaders.push_back(&parallaxShader);
+	//cube.Init();
 	plane.Init();
 
 	diffuseMap = stbCreateTexture("data/sprites/bricks2.jpg");
@@ -95,7 +97,7 @@ void HelloParallaxDrawingProgram::Draw()
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -10.0f));
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 
-	Shader& currentShader = enableParallax ? normalShader : parallaxShader;
+	Shader& currentShader = enableParallax ? parallaxShader : normalShader;
 	currentShader.Bind();
 	currentShader.SetMat4("model", model);
 	currentShader.SetMat4("view", camera.GetViewMatrix());
@@ -117,6 +119,7 @@ void HelloParallaxDrawingProgram::Draw()
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, heightMap);
 
+	//cube.Draw();
 	plane.Draw();
 }
 
