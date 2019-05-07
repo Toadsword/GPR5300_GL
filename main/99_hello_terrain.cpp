@@ -41,9 +41,9 @@ private:
 	float terrainOriginY = -1.0f;
 	float terrainElevationFactor = 5.0f;
 
-	const size_t terrainWidth = 256l;
-	const size_t terrainHeight = 256l;
-	const float terrainResolution = 0.04f;
+	const size_t terrainWidth = 512l;
+	const size_t terrainHeight = 512l;
+	const float terrainResolution = 0.1f;
 
 	const size_t verticesCount = terrainWidth * terrainHeight;
 	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
@@ -59,7 +59,6 @@ void HelloTerrainDrawingProgram::Init()
 
 	for (size_t i = 0l; i < verticesCount; i++)
 	{
-
 		vertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (float)(i % terrainWidth) * terrainResolution;//x
 		vertices[3 * i + 1] = 0.0f;//y
 		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
@@ -115,8 +114,8 @@ void HelloTerrainDrawingProgram::Init()
 	sfTerrainTexture.setSmooth(true);
 	terrainTexture = sfTerrainTexture.getNativeHandle();
 #else
-	terrainHeightMap = stbCreateTexture("data/terrain/tt_2_height.png",true, false);
-	terrainTexture = stbCreateTexture("data/terrain/tt_2_texture.png", true, false);
+	terrainHeightMap = stbCreateTexture("data/terrain/plains_height.png",true, false);
+	terrainTexture = stbCreateTexture("data/terrain/plains_texture.png", true, false);
 #endif
 
 	glGenBuffers(2, &VBO[0]);

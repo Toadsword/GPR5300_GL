@@ -48,7 +48,7 @@ void Camera::ProcessMouseMovement(float mouseX, float mouseY, GLboolean constrai
 #ifdef USE_SDL2
 	SDL_GetWindowSize(window, &screenWidth, &screenHeight);
 
-	if (MouseWrapMode)
+	if (MouseWrapMode && hasFocus)
 	{
 		SDL_WarpMouseInWindow(window, screenWidth / 2, screenHeight / 2);
 		float xOffset = mouseX - screenWidth / 2.0f;

@@ -6,18 +6,17 @@
 
 #define REFRACTION
 
-#define SQRT // else Asin
-//#define ASIN // else None
+//#define SQRT // else Asin
+#define ASIN // else Normal
 
-//TIMES : (pour 100 model - DrawCubemaps)
-// SQRT : ~1.8, 2.2ms
-// ASIN : ~2.0, 2.4ms
+//TIMES : (pour 100 model - DrawCubemaps - Portable)
+// SQRT : 5.7ms
+// ASIN : 5.9ms
 
-//TIMES : (pour 1000 model - DrawCubemaps)
-// SQRT : ~17.5, 17.8ms
-// ASIN : ~17.5, 18ms
+//TIMES : (pour 500 model - DrawCubemaps - Portable)
+// SQRT : 25ms constant avec quelques pikes
+// ASIN : ~25ms
 
-// --> Pas de grande diff, a moins que j'ai fait de la merde :D
 
 #ifdef REFRACTION
 float refractiveIndexes []=
@@ -59,7 +58,9 @@ private:
 	unsigned int cubemapTexture;
 	Shader cubemapShader;
 	GLuint cubeMapVAO;
-	
+
+	int numModels = 500;
+
 	float vertices[5 * 36] =
 	{
 		0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -161,7 +162,6 @@ private:
 	int currentRefractiveMaterial = (int)RefractriveMaterial::Glass;
 #endif
 
-	int numModels = 1000;
 };
 
 void HelloCubemapsDrawingProgram::Init()

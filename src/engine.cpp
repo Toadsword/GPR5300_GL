@@ -172,6 +172,14 @@ void Engine::Loop()
 				configuration.screenWidth = event.window.data1;
 				configuration.screenHeight = event.window.data2;
 			}
+			if(event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
+			{
+				camera.hasFocus = false;
+			}
+			if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
+			{
+				camera.hasFocus = true;
+			}
 		}
 		if(event.type == SDL_KEYDOWN)
 		{

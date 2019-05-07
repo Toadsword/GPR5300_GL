@@ -42,6 +42,7 @@ public:
 	float MouseSensitivity;
 	float Zoom;
 	bool MouseWrapMode = false;
+	bool hasFocus = true;
 	SDL_Window* window;
 
 	// Constructor with vectors
