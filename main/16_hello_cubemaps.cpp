@@ -10,12 +10,8 @@
 #define ASIN // else Normal
 
 //TIMES : (pour 100 model - DrawCubemaps - Portable)
-// SQRT : 5.7ms
-// ASIN : 5.9ms
-
-//TIMES : (pour 500 model - DrawCubemaps - Portable)
-// SQRT : 25ms constant avec quelques pikes
-// ASIN : ~25ms
+// SQRT : 5.8ms 
+// ASIN : 5.5ms
 
 
 #ifdef REFRACTION
@@ -59,7 +55,7 @@ private:
 	Shader cubemapShader;
 	GLuint cubeMapVAO;
 
-	int numModels = 500;
+	int numModels = 100;
 
 	float vertices[5 * 36] =
 	{

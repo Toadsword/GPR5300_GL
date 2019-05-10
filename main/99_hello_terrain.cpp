@@ -1,6 +1,8 @@
 #include <engine.h>
 #include <graphics.h>
 
+#include <Remotery.h>
+
 #ifdef _DEBUG
 #include <iostream>
 #endif
@@ -23,10 +25,12 @@ public:
 	void UpdateUi() override;
 private:
 	Shader shaderProgram;
+
+	float lightPos[3] = { 0,0,-9.5 };
+
 	unsigned VBO[2] = {};
 	unsigned int VAO = 0;
 	unsigned int EBO = 0;
-
 
 	unsigned terrainTexture = 0;
 	unsigned terrainHeightMap = 0;
@@ -44,7 +48,7 @@ private:
 
 	const size_t terrainWidth = 512l;
 	const size_t terrainHeight = 512l;
-	const float terrainResolution = 0.1f;
+	const float terrainResolution = 0.2f;
 
 	const size_t verticesCount = terrainWidth * terrainHeight;
 	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
@@ -151,6 +155,9 @@ void HelloTerrainDrawingProgram::Draw()
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
+
+	rmt_BeginOpenGLSample(HelloTerrainDraw);
+
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
@@ -163,6 +170,8 @@ void HelloTerrainDrawingProgram::Draw()
 	shaderProgram.Bind();
 	const int viewLoc = glGetUniformLocation(shaderProgram.GetProgram(), "view");
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	shaderProgram.SetVec3("lightPos", lightPos);
+	shaderProgram.SetVec3("viewPos", camera.Position);
 
 	const int projectionLoc = glGetUniformLocation(shaderProgram.GetProgram(), "projection");
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
@@ -174,9 +183,9 @@ void HelloTerrainDrawingProgram::Draw()
 	glUniform1f(heightFactorConstLoc, terrainElevationFactor);
     const int heightConstLoc = glGetUniformLocation(shaderProgram.GetProgram(), "heightOrigin");
     glUniform1f(heightConstLoc, terrainOriginY);
-	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture1"), 0);
-	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture2"), 1);
-	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "texture3"), 2);
+	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "heightMap"), 0);
+	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "diffuseMap"), 1);
+	glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "normalMap"), 2);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
 	glActiveTexture(GL_TEXTURE1);
@@ -188,6 +197,7 @@ void HelloTerrainDrawingProgram::Draw()
 	glDrawElements(GL_TRIANGLES, faceCount * 3, GL_UNSIGNED_INT, 0);
 
 	glBindVertexArray(0);
+	rmt_EndOpenGLSample();
 }
 
 void HelloTerrainDrawingProgram::ProcessInput()

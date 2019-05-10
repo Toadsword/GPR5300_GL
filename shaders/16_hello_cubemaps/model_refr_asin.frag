@@ -18,8 +18,10 @@ uniform float refractiveIndex = 1.52;
 
 vec3 refract_custom(vec3 I,vec3 N,float eta)
 {
-	vec3 InvertedN = vec3(pow(N.x, -1), pow(N.y, -1), pow(N.z, -1));
-	vec3 R = -InvertedN * cos(asin(eta * sin(acos(dot(I, N)))));
+	vec3 R;
+	float sincosDot = sin(acos(dot(N, -I)));
+	R.x = eta * sincosDot;
+	R.y = -cos(asin(eta * sincosDot));
 	return R;
 }
 

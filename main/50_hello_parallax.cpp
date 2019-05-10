@@ -19,13 +19,15 @@ private:
 	unsigned int heightMap;
 	Shader normalShader;
 	Shader parallaxShader;
+	Shader steepShader;
+	Shader occlusionparallaxShader;
 	Cube cube;
 	Plane plane;
 	float lightPos[3] = { 0,0,-9.5 };
 
-	float heightScale = 0.1f;
+	float heightScale = 0.06f;
 
-	bool enableParallax = false;
+	int parallaxStep = 1;
 };
 
 void HelloParallaxDrawingProgram::Init()
@@ -40,8 +42,19 @@ void HelloParallaxDrawingProgram::Init()
 		"shaders/50_hello_parallax/parallax.vert",
 		"shaders/50_hello_parallax/parallax.frag"
 	);
+	steepShader.CompileSource(
+		"shaders/50_hello_parallax/parallax.vert",
+		"shaders/50_hello_parallax/steepParallax.frag"
+	);
+	occlusionparallaxShader.CompileSource(
+		"shaders/50_hello_parallax/parallax.vert",
+		"shaders/50_hello_parallax/occlusionParallax.frag"
+	);
 	shaders.push_back(&normalShader);
 	shaders.push_back(&parallaxShader);
+	shaders.push_back(&steepShader);
+	shaders.push_back(&occlusionparallaxShader);
+
 	//cube.Init();
 	plane.Init();
 
@@ -96,8 +109,25 @@ void HelloParallaxDrawingProgram::Draw()
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -10.0f));
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
-
-	Shader& currentShader = enableParallax ? parallaxShader : normalShader;
+	Shader& currentShader = Shader();
+	switch(parallaxStep)
+	{
+		case 1 :
+			currentShader = normalShader;
+		break;
+		case 2:
+			currentShader = parallaxShader;
+			break;
+		case 3:
+			currentShader = steepShader;
+			break;
+		case 4:
+			currentShader = occlusionparallaxShader;
+			break;
+		default:
+			break;
+	}
+	//Shader& currentShader = enableParallax ? parallaxShader : normalShader;
 	currentShader.Bind();
 	currentShader.SetMat4("model", model);
 	currentShader.SetMat4("view", camera.GetViewMatrix());
@@ -132,7 +162,11 @@ void HelloParallaxDrawingProgram::UpdateUi()
 	ImGui::Separator();
 	ImGui::InputFloat3("LightPos", lightPos);
 	ImGui::SliderFloat("HeightScale", &heightScale, 0.0f, 1.0f);
-	ImGui::Checkbox("Enable Parallax Map", &enableParallax);
+	ImGui::SliderInt("Step Parallax", &parallaxStep, 1, 4);
+	ImGui::Text("1 : Normal Mapping");
+	ImGui::Text("2 : Parallax Mapping");
+	ImGui::Text("3 : Steep Parallax Mapping");
+	ImGui::Text("4 : Occlusion Parallax Mapping");
 }
 
 int main(int argc, char** argv)
