@@ -8,7 +8,7 @@
 
 #define TRANSPARENT
 #define BLENDING
-//#define ORDER
+#define ORDER
 
 class HelloBillboardDrawingProgram : public DrawingProgram
 {
@@ -30,10 +30,10 @@ private:
 	unsigned VBO[2];
 	unsigned EBO;
 	float vertices[12] = {
-			0.5f,  0.5f, 0.0f,  // top right
-			0.5f, -0.5f, 0.0f,  // bottom right
-			-0.5f, -0.5f, 0.0f,  // bottom left
-			-0.5f,  0.5f, 0.0f   // top left
+		0.5f,  0.5f, 0.0f,  // top right
+		0.5f, -0.5f, 0.0f,  // bottom right
+		-0.5f, -0.5f, 0.0f,  // bottom left
+		-0.5f,  0.5f, 0.0f   // top left
 	};
 	float texCoords[8] = {
 			1.0f, 0.0f,	  // top right
@@ -81,8 +81,8 @@ void HelloBillboardDrawingProgram::Init()
 	shaders.push_back(&windowShaderProgram);
 #ifdef BLENDING
     windowShaderProgram.CompileSource(
-            "shaders/51_hello_billboard/billboard.vert",
-            "shaders/51_hello_billboard/billboard.frag");
+            "shaders/51_hello_billboard/quad.vert",
+            "shaders/51_hello_billboard/quad.frag");
 #else
 
 #ifdef TRANSPARENT
@@ -100,7 +100,7 @@ void HelloBillboardDrawingProgram::Init()
 #ifdef TRANSPARENT
     grassShaderProgram.CompileSource(
             "shaders/51_hello_billboard/billboard.vert",
-            "shaders/51_hello_billboard/billboard.frag");
+            "shaders/51_hello_billboard/billboard.frag"); // quad
 #else
 	grassShaderProgram.CompileSource(
 		"shaders/51_hello_billboard/quad.vert",
@@ -138,7 +138,6 @@ void HelloBillboardDrawingProgram::Init()
 
 void HelloBillboardDrawingProgram::Draw()
 {
-
 	ProcessInput();
 
 	glEnable(GL_DEPTH_TEST);
@@ -159,9 +158,9 @@ void HelloBillboardDrawingProgram::Draw()
 	//grassShaderProgram.SetMat4("view", view);
 	//grassShaderProgram.SetMat4("projection", projection);
 	grassShaderProgram.SetMat4("VP", viewProjMatrix);
-	grassShaderProgram.SetVec3("CameraRight_worldspace", view[0][0], view[1][0], view[2][0]);
-	grassShaderProgram.SetVec3("CameraUp_worldspace", view[0][1], view[1][1], view[2][1]);
-	grassShaderProgram.SetVec2("BillboardSize", 1.0f, 1.0f);
+	grassShaderProgram.SetVec3("CameraRight", view[0][0], view[1][0], view[2][0]);
+	grassShaderProgram.SetVec3("CameraUp", view[0][1], view[1][1], view[2][1]);
+	//grassShaderProgram.SetVec2("BillboardSize", 1.0f, 1.0f);
 	//grassShaderProgram.SetVec3("color", glm::vec4(0.2f, 0.1f, 0.1f, 1.0f));
 
 	//glm::mat4 model = glm::mat4(1.0f); //model transform matrix
@@ -171,8 +170,8 @@ void HelloBillboardDrawingProgram::Draw()
 		//model = glm::mat4(1.0f);
 		//model = glm::translate(model, grassPosition);
 		//grassShaderProgram.SetMat4("model", model);
-		//grassShaderProgram.SetVec3("offset", camera.Position - grassPosition);
 		grassShaderProgram.SetVec3("BillboardPos", grassPosition);
+		//grassShaderProgram.SetVec3("offset", grassPosition);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 	//Draw window
@@ -184,10 +183,10 @@ void HelloBillboardDrawingProgram::Draw()
 	glBindTexture(GL_TEXTURE_2D, windowTexture);
 
 	//windowShaderProgram.SetMat4("view", view);
-	//windowShaderProgram.SetMat4("projection", projection);
-	windowShaderProgram.SetMat4("VP", viewProjMatrix);
-	grassShaderProgram.SetVec3("CameraRight_worldspace", view[0][0], view[1][0], view[2][0]);
-	grassShaderProgram.SetVec3("CameraUp_worldspace", view[0][1], view[1][1], view[2][1]);
+	windowShaderProgram.SetMat4("projection", viewProjMatrix);
+	//windowShaderProgram.SetMat4("VP", viewProjMatrix);
+	//windowShaderProgram.SetVec3("CameraRight_worldspace", view[0][0], view[1][0], view[2][0]);
+	//windowShaderProgram.SetVec3("CameraUp_worldspace", view[0][1], view[1][1], view[2][1]);
 	//windowShaderProgram.SetVec3("color", glm::vec4(0.2f, 0.1f, 0.1f, 1.0f));
 
 #ifdef ORDER
@@ -209,9 +208,9 @@ void HelloBillboardDrawingProgram::Draw()
 		//model = glm::translate(model, windowPosition);
 		//model = glm::rotate(model, windowAngles[i], glm::vec3(0,1,0));
 
-		windowShaderProgram.SetVec3("BillboardPos", windowPosition);
-		windowShaderProgram.SetVec2("BillboardSize", 1.0f, 1.0f);
-		//windowShaderProgram.SetVec3("offset", camera.Position - windowPosition);
+		//windowShaderProgram.SetVec3("BillboardPos", windowPosition);
+		//windowShaderProgram.SetVec2("BillboardSize", 1.0f, 1.0f);
+		windowShaderProgram.SetVec3("offset", -camera.Position + windowPosition);
 
 		//model = glm::lookAt(windowPosition, camera.Position + camera.Up, camera.Up);
 		//windowShaderProgram.SetMat4("model", model);
