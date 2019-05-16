@@ -12,13 +12,11 @@ uniform vec3 offset;
 
 void main()
 {
+	vec3 calculated = offset + CameraRight * aPos.x + CameraUp * aPos.y;
+
+	float scale = 10.0f;
     TexCoords = aTexCoord;
+//    ParticleColor = color;
+    gl_Position = projection * vec4(calculated, 1.0);
 
-	vec3 vertexPosition_worldspace = 
-		CameraRight * aPos.x
-		+ CameraUp * aPos.y + aPos.z;
-
-
-    //ParticleColor = color;
-    gl_Position = projection * vec4((aPos) + offset, 1.0);
 }

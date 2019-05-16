@@ -47,12 +47,39 @@ private:
 		1, 2, 3    // second triangle
 	};
 
-	const static int grassNmb = 3;
+	const static int grassNmb = 30;
 	glm::vec3 grassPositions [grassNmb] =
 	{
 		glm::vec3(1., 0.0,-3.0),
-		glm::vec3(1., 0.0,-1.0),
+		glm::vec3(1., 0.0,-5.0),
+		glm::vec3(-2.,0.0,-1.0),
+		glm::vec3(3., 0.0,-16.0),
+		glm::vec3(2., 0.0,-1.0),
+		glm::vec3(-1.,0.0,-11.0),
+		glm::vec3(1., 0.0,-3.0),
+		glm::vec3(1., 0.0,-6.0),
 		glm::vec3(-1.,0.0,-2.0),
+		glm::vec3(1., 0.0,-3.0),
+		glm::vec3(1., 0.0,-4.0),
+		glm::vec3(-1.,0.0,-5.0),
+		glm::vec3(1., 0.0,-6.0),
+		glm::vec3(1., 0.0,-4.0),
+		glm::vec3(-1.,0.0,-12.0),
+		glm::vec3(1., 0.0,-13.0),
+		glm::vec3(1., 0.0,-15.0),
+		glm::vec3(-1.,0.0,-6.0),
+		glm::vec3(1., 0.0,-3.0),
+		glm::vec3(1., 0.0,-19.0),
+		glm::vec3(-1.,0.0,-20.0),
+		glm::vec3(1., 0.0,-1.0),
+		glm::vec3(1., 0.0,-17.0),
+		glm::vec3(-1.,0.0,-2.0),
+		glm::vec3(1., 0.0,-1.0),
+		glm::vec3(1., 0.0,-14.0),
+		glm::vec3(-1.,0.0,-14.0),
+		glm::vec3(1., 0.0,-13.0),
+		glm::vec3(1., 0.0,-21.0),
+		glm::vec3(-1.,0.0,-22.0),
 	};
 
 	const static int windowNmb = 3;
@@ -78,11 +105,11 @@ void HelloBillboardDrawingProgram::Init()
 	programName = "HelloBillBoard";
 
 	shaders.push_back(&grassShaderProgram);
-	shaders.push_back(&windowShaderProgram);
+	//shaders.push_back(&windowShaderProgram);
 #ifdef BLENDING
-    windowShaderProgram.CompileSource(
-            "shaders/51_hello_billboard/quad.vert",
-            "shaders/51_hello_billboard/quad.frag");
+    //windowShaderProgram.CompileSource(
+    //        "shaders/51_hello_billboard/quad.vert",
+    //        "shaders/51_hello_billboard/quad.frag");
 #else
 
 #ifdef TRANSPARENT
@@ -99,8 +126,8 @@ void HelloBillboardDrawingProgram::Init()
 
 #ifdef TRANSPARENT
     grassShaderProgram.CompileSource(
-            "shaders/51_hello_billboard/billboard.vert",
-            "shaders/51_hello_billboard/billboard.frag"); // quad
+            "shaders/51_hello_billboard/quad.vert",
+            "shaders/51_hello_billboard/quad.frag"); // quad
 #else
 	grassShaderProgram.CompileSource(
 		"shaders/51_hello_billboard/quad.vert",
@@ -108,7 +135,7 @@ void HelloBillboardDrawingProgram::Init()
 #endif
 
 	grassTexture = stbCreateTexture("data/sprites/grass.png", true, true, true);
-	windowTexture = stbCreateTexture("data/sprites/blending_transparent_window.png");
+	//windowTexture = stbCreateTexture("data/sprites/blending_transparent_window.png");
 
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
@@ -148,16 +175,15 @@ void HelloBillboardDrawingProgram::Draw()
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 100.0f);
 
-	glm::mat4 viewProjMatrix = view * projection;
+	//glm::mat4 viewProjMatrix = view * projection;
 
 	//Draw grass
 	grassShaderProgram.Bind();
 	glBindTexture(GL_TEXTURE_2D, grassTexture);
 	glBindVertexArray(VAO);
 
-	//grassShaderProgram.SetMat4("view", view);
-	//grassShaderProgram.SetMat4("projection", projection);
-	grassShaderProgram.SetMat4("VP", viewProjMatrix);
+	grassShaderProgram.SetMat4("projection", projection * view);
+	//grassShaderProgram.SetMat4("VP", viewProjMatrix);
 	grassShaderProgram.SetVec3("CameraRight", view[0][0], view[1][0], view[2][0]);
 	grassShaderProgram.SetVec3("CameraUp", view[0][1], view[1][1], view[2][1]);
 	//grassShaderProgram.SetVec2("BillboardSize", 1.0f, 1.0f);
@@ -170,10 +196,11 @@ void HelloBillboardDrawingProgram::Draw()
 		//model = glm::mat4(1.0f);
 		//model = glm::translate(model, grassPosition);
 		//grassShaderProgram.SetMat4("model", model);
-		grassShaderProgram.SetVec3("BillboardPos", grassPosition);
-		//grassShaderProgram.SetVec3("offset", grassPosition);
+		//grassShaderProgram.SetVec3("BillboardPos", grassPosition);
+		grassShaderProgram.SetVec3("offset", grassPosition - camera.Position);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
+	/*
 	//Draw window
 #ifdef BLENDING
 	glEnable(GL_BLEND);
@@ -217,6 +244,7 @@ void HelloBillboardDrawingProgram::Draw()
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 	glBindVertexArray(0);
+	*/
 }
 
 void HelloBillboardDrawingProgram::Destroy()
@@ -266,7 +294,7 @@ int main(int argc, char** argv)
 	auto& config = engine.GetConfiguration();
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
-	config.windowName = "Hello Blending";
+	config.windowName = "Hello Billboard";
 	config.bgColor = { 0,0,0 };
 
 	engine.AddDrawingProgram(new HelloBillboardDrawingProgram());

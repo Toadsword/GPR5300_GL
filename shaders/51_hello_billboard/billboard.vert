@@ -8,6 +8,9 @@ out vec2 TexCoords;
 // Values that stay constant for the whole mesh.
 uniform vec3 CameraRight;
 uniform vec3 CameraUp;
+uniform vec3 CameraPos;
+uniform mat4 view; // Model-View-Projection matrix, but without the Model (the position is in BillboardPos; the orientation depends on the camera)
+uniform mat4 projection; // Model-View-Projection matrix, but without the Model (the position is in BillboardPos; the orientation depends on the camera)
 uniform mat4 VP; // Model-View-Projection matrix, but without the Model (the position is in BillboardPos; the orientation depends on the camera)
 uniform vec3 BillboardPos; // Position of the center of the billboard
 
