@@ -220,6 +220,7 @@ void HelloInstancingDrawingProgram::Draw()
 
 void HelloInstancingDrawingProgram::Destroy()
 {
+
 }
 
 void HelloInstancingDrawingProgram::CalculateForce()

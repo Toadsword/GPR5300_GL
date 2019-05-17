@@ -126,8 +126,8 @@ void HelloBillboardDrawingProgram::Init()
 
 #ifdef TRANSPARENT
     grassShaderProgram.CompileSource(
-            "shaders/51_hello_billboard/quad.vert",
-            "shaders/51_hello_billboard/quad.frag"); // quad
+            "shaders/51_hello_billboard/billboard.vert",
+            "shaders/51_hello_billboard/full_transparent.frag"); // quad
 #else
 	grassShaderProgram.CompileSource(
 		"shaders/51_hello_billboard/quad.vert",
@@ -182,10 +182,11 @@ void HelloBillboardDrawingProgram::Draw()
 	glBindTexture(GL_TEXTURE_2D, grassTexture);
 	glBindVertexArray(VAO);
 
-	grassShaderProgram.SetMat4("projection", projection * view);
+	//PROJECTION * VIEW, ELSE IT SIMPLY DOESN'T WORK
+	grassShaderProgram.SetMat4("viewProj", projection * view);
 	//grassShaderProgram.SetMat4("VP", viewProjMatrix);
-	grassShaderProgram.SetVec3("CameraRight", view[0][0], view[1][0], view[2][0]);
-	grassShaderProgram.SetVec3("CameraUp", view[0][1], view[1][1], view[2][1]);
+	grassShaderProgram.SetVec3("cameraRight", view[0][0], view[1][0], view[2][0]);
+	grassShaderProgram.SetVec3("cameraUp", view[0][1], view[1][1], view[2][1]);
 	//grassShaderProgram.SetVec2("BillboardSize", 1.0f, 1.0f);
 	//grassShaderProgram.SetVec3("color", glm::vec4(0.2f, 0.1f, 0.1f, 1.0f));
 
@@ -197,7 +198,7 @@ void HelloBillboardDrawingProgram::Draw()
 		//model = glm::translate(model, grassPosition);
 		//grassShaderProgram.SetMat4("model", model);
 		//grassShaderProgram.SetVec3("BillboardPos", grassPosition);
-		grassShaderProgram.SetVec3("offset", grassPosition - camera.Position);
+		grassShaderProgram.SetVec3("position", grassPosition - camera.Position);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	}
 	/*
