@@ -9,7 +9,7 @@
 
 #define INSTANCING
 #define MOVEMENT
-//#define OPTI_BANDWIDTH
+#define OPTI_BANDWIDTH
 class HelloInstancingDrawingProgram : public DrawingProgram
 {
 public:
@@ -102,19 +102,16 @@ void HelloInstancingDrawingProgram::Init()
 		GL_STATIC_DRAW
 #endif
 	);
-#ifdef OPTI_BANDWIDTH
-	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-#endif
 
 	unsigned int VAO = asteroidModel.meshes[0].GetVAO();
 
 	glBindVertexArray(VAO);
-	GLsizei vec4Size = sizeof(glm::vec4);
 #ifdef OPTI_BANDWIDTH
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 	glVertexAttribDivisor(3, 1);
 #else
+	GLsizei vec4Size = sizeof(glm::vec4);
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
 	glEnableVertexAttribArray(4);
