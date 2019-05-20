@@ -68,8 +68,8 @@ void CameraProgram::ProcessInput()
 #ifdef Firefly
 // CPU representation of a particle
 struct FireflyParticle {
-	glm::vec3 pos, speed, topLeftLimit, bottomRightLimit;
-	float cameradistance; // *Squared* distance to the camera. if dead : -1.0f
+	glm::vec3 startPos, destPos, diffPos;
+	float timeSinceBegin, timeToEnd, cameradistance; // *Squared* distance to the camera. if dead : -1.0f
 
 	bool operator<(const FireflyParticle& that) const {
 		// Sort in reverse order : far particles drawn first.
@@ -77,6 +77,9 @@ struct FireflyParticle {
 	}
 };
 const int MaxParticles = 100;
+const glm::vec3 botRightLimit = glm::vec3(-10, -10, -10);
+const glm::vec3 topLeftLimit = glm::vec3(10, 10, 10);
+const glm::vec3 range = botRightLimit - topLeftLimit;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -142,9 +145,19 @@ void FireflyDrawingProgram::Init()
 	auto& config = engine->GetConfiguration();
 
 	ParticlesContainer.resize(MaxParticles);
+	//Init particles
 	for (int i = 0; i < MaxParticles; i++) {
+		ParticlesContainer[i].destPos = glm::vec3(
+			rand() % 20 + botRightLimit.x,
+			rand() % 20 + botRightLimit.y,
+			rand() % 20 + botRightLimit.z
+		);
+
+		ParticlesContainer[i].timeSinceBegin = -1.0f;
+		ParticlesContainer[i].timeToEnd = -1.0f;
 		ParticlesContainer[i].cameradistance = -1.0f;
-		ParticlesContainer[i].speed = glm::vec3(-1.0f, 0.0f, 3.0f);
+
+		LastUsedParticle = i;
 	}
 
 	shaders.push_back(&fireflyShaderProgram);
@@ -155,6 +168,10 @@ void FireflyDrawingProgram::Init()
 	blurShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/blur.frag");
 
 	fireflyTexture = stbCreateTexture("data/sprites/firefly.png", true, true, true);
+
+	//////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////			BINDING HDR 		//////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
 
 	hdrPlane.Init();
 	glGenFramebuffers(1, &hdrFBO);
@@ -196,11 +213,8 @@ void FireflyDrawingProgram::Init()
 
 
 	//////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////			PARTICULES			//////////////////////////
+	/////////////////////////////			BINDING VAO			//////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////
-	//particle_position.resize(MaxParticles);
-
-
 
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
@@ -236,23 +250,6 @@ void FireflyDrawingProgram::Init()
 
 	//unbind Vertex Array
 	glBindVertexArray(0);
-
-	glm::vec3 botRightLimit = glm::vec3(-10, -10, -10);
-	glm::vec3 topLeftLimit = glm::vec3(10, 10, 10);
-	glm::vec3 range = botRightLimit - topLeftLimit;
-	//Init particles
-	for (int i = 0; i < MaxParticles; i++) {
-		ParticlesContainer[i].topLeftLimit = botRightLimit;
-		ParticlesContainer[i].bottomRightLimit = topLeftLimit;
-
-		ParticlesContainer[i].pos = glm::vec3(
-			rand() % 20 + botRightLimit.x,
-			rand() % 20 + botRightLimit.y,
-			rand() % 20 + botRightLimit.z
-		);
-
-		LastUsedParticle = i;
-	}
 }
 
 void FireflyDrawingProgram::Draw()
@@ -340,22 +337,37 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 	Engine* engine = Engine::GetPtr();
 	auto& camera = engine->GetCamera();
 
-
 	// Simulate all particles
 	int ParticlesCount = 0;
-	for (int i = 0; i < MaxParticles; i++) {
+	for (int i = 0; i < MaxParticles; i++) 
+	{
 		FireflyParticle& p = ParticlesContainer[i]; // shortcut
 
-		// Simulate simple physics : gravity only, no collisions
-		//p.speed += glm::vec3(0.0f, -9.81f, 0.0f) * dt * 0.5f;
-		//p.pos += p.speed * dt;
-		//p.cameradistance = glm::length(p.pos - camera.Position);
-		//ParticlesContainer[i].pos += glm::vec3(0.0f,10.0f, 0.0f) * (float)delta;
-		p.pos += glm::vec3(0.0f, 5.0f, 0.0f) * dt;
+		p.timeSinceBegin -= dt;
+		if(p.timeSinceBegin < 0.0f)
+		{
+			p.startPos = p.destPos;
+			p.destPos = glm::vec3(
+				rand() % 20 + botRightLimit.x,
+				rand() % 20 + botRightLimit.y,
+				rand() % 20 + botRightLimit.z
+			);
+			p.diffPos = p.destPos - p.startPos;
+
+			p.timeToEnd = glm::length(p.diffPos) / 2.0f;
+			p.timeSinceBegin = p.timeToEnd;
+		}
+
+		//Parametric blend, ease in and out. Results in this : https://www.wolframalpha.com/input/?i=t%5E2(3-2t)
+		// Go from 0 to 1.
+		float t = 1 - p.timeSinceBegin / p.timeToEnd;
+		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
+
+
 		// Fill the GPU buffer
-		particle_position[3 * i + 0] = p.pos.x;
-		particle_position[3 * i + 1] = p.pos.y;
-		particle_position[3 * i + 2] = p.pos.z;
+		particle_position[3 * i + 0] = p.startPos.x + p.diffPos.x * change;
+		particle_position[3 * i + 1] = p.startPos.y + p.diffPos.y * change;
+		particle_position[3 * i + 2] = p.startPos.z + p.diffPos.z * change;
 
 		ParticlesCount++;
 	}
