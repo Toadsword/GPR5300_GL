@@ -20,22 +20,23 @@ struct EnginePointLight
 {
 	vec3 position;
 	vec3 color;
-	float constant;
-    float linear;
-    float quadratic;
 	float intensity;
 	float distance;
 };
+const float pointConstant = 1.0f;
+const float pointLinear = 0.09f;
+const float pointQuadratic = 0.032f;
 
 vec3 calculate_point_light(EnginePointLight light, VS_OUT fs_in, EngineMaterial material, vec3 normal)
 {
 
 	float distance    = length(light.position - fs_in.FragPos);
-	float attenuation = min(light.distance / (light.constant + light.linear * distance + 
-    		    light.quadratic * (distance * distance)), 1.0); 
+	float attenuation = min(light.distance / (pointConstant + pointLinear * distance +
+		pointQuadratic * (distance * distance)), 1.0);
 	if(attenuation < 0.01)
 		attenuation = 0.0;
-
+	if (light.distance < distance)
+		return vec3(0,0,0);
 	vec3 lightDir = normalize(light.position - fs_in.FragPos);
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = 0.5 * diff * vec3(texture(material.texture_diffuse1, fs_in.TexCoords))* light.color;
@@ -104,7 +105,12 @@ vec3 calculate_spot_light(EngineSpotLight light, VS_OUT fs_in, EngineMaterial ma
     return light.intensity * intensity * (diffuse + specular);
 }
 
-const int MAX_POINT_LIGHT = 5;
+float linearize(float depth, float zNear, float zFar) {
+
+	return (2.0 * zNear) / (zFar + zNear - depth * (zFar - zNear));
+}
+
+const int MAX_POINT_LIGHT = 128;
 const int MAX_SPOT_LIGHT = 5;
 
 uniform EnginePointLight pointLights[MAX_POINT_LIGHT];
@@ -114,4 +120,9 @@ uniform int pointLightsNmb = 0;
 uniform int spotLightsNmb = 0;
 uniform bool directionalLightEnable = false;
 uniform float ambientIntensity = 0.2;
+
+
+
+
+
 
