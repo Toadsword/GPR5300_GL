@@ -22,16 +22,17 @@ private:
 	unsigned rboDepth = 0;
 	unsigned hdrColorBuffer[2];
 
-	Shader corridorShader;
+	Shader modelForwardShader;
 	Plane corridorPlane;
-	float corridorScale[3] = { 1.1f, 10.0f, 1.0f };
+	float corridorScale[3] = { 1.1f, 100.0f, 1.0f };
 	unsigned corridorDiffuseMap = 0;
 	unsigned corridorNormalMap = 0;
 	unsigned corridorSpecularMap = 0;
 
 	Cube lightCube;
 	Shader lightShader;
-	PointLight lights[5] = {};
+	static const int lightNmb = 100;
+	PointLight lights[lightNmb] = {};
 	float exposure = 1.0f;
 	float lightIntensity = 1.0f;
 	//blur
@@ -53,10 +54,10 @@ void HelloHdrDrawingProgram::Init()
 	corridorDiffuseMap = stbCreateTexture("data/sprites/bricks_02_dif.tga");
 	corridorNormalMap = stbCreateTexture("data/sprites/bricks_02_nm.tga");
 	corridorSpecularMap = stbCreateTexture("data/sprites/bricks_02_spec.tga");
-	corridorShader.CompileSource(
+	modelForwardShader.CompileSource(
 		"shaders/22_hello_bloom/plane.vert", 
 		"shaders/22_hello_bloom/plane.frag");
-	shaders.push_back(&corridorShader);
+	shaders.push_back(&modelForwardShader);
 
 	hdrPlane.Init();
 	glGenFramebuffers(1, &hdrFBO);
@@ -94,10 +95,13 @@ void HelloHdrDrawingProgram::Init()
 		"shaders/22_hello_bloom/hdr.frag");
 	shaders.push_back(&hdrShader);
 
-	for(int i = 0; i < 5;i++)
+	for(int i = 0; i < lightNmb;i++)
 	{
 
-		lights[i].position = glm::vec3(RandomRange(-128, 128) / 256.0f, RandomRange(-128, 128) / 256.0f, 7.5f-i*5);
+		lights[i].position = glm::vec3(
+			RandomRange(-128, 128) / 256.0f, 
+			RandomRange(-128, 128) / 256.0f, 
+			7.5f- (float)(i*lightNmb)/lightNmb);
 		lights[i].color = glm::vec3(
 		RandomRange(0,256)/256.0f,
 		RandomRange(0,256)/256.0f,
@@ -141,33 +145,33 @@ void HelloHdrDrawingProgram::Draw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	//Draw corridors
-	corridorShader.Bind();
-	for(int i = 0; i < 5; i++)
+	modelForwardShader.Bind();
+	for(int i = 0; i < lightNmb; i++)
 	{
 
 		lights[i].intensity = lightIntensity;
-		lights[i].Bind(corridorShader, i);
+		lights[i].Bind(modelForwardShader, i);
 	}
 
-	corridorShader.SetInt("pointLightsNmb", 5);
+	modelForwardShader.SetInt("pointLightsNmb", 5);
 	const glm::mat4 projection = glm::perspective(
 		camera.Zoom,
 		(float)config.screenWidth / config.screenHeight,
 		0.1f, 100.0f);
-	corridorShader.SetMat4("projection", projection);
-	corridorShader.SetMat4("view", camera.GetViewMatrix());
-	corridorShader.SetVec2("texTiling", glm::vec2(corridorScale[0], corridorScale[1]));
+	modelForwardShader.SetMat4("projection", projection);
+	modelForwardShader.SetMat4("view", camera.GetViewMatrix());
+	modelForwardShader.SetVec2("texTiling", glm::vec2(corridorScale[0], corridorScale[1]));
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, corridorDiffuseMap);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, corridorNormalMap);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, corridorSpecularMap);
-	corridorShader.SetInt("material.texture_diffuse1", 0);
-	corridorShader.SetInt("material.texture_normal", 1);
-	corridorShader.SetInt("material.texture_specular1", 2);
-	corridorShader.SetVec3("viewPos", camera.Position);
-	corridorShader.SetFloat("ambientIntensity", 0.0f);
+	modelForwardShader.SetInt("material.texture_diffuse1", 0);
+	modelForwardShader.SetInt("material.texture_normal", 1);
+	modelForwardShader.SetInt("material.texture_specular1", 2);
+	modelForwardShader.SetVec3("viewPos", camera.Position);
+	modelForwardShader.SetFloat("ambientIntensity", 0.0f);
 	for (int i = 0; i < 4; i++)
 	{
 		
@@ -186,12 +190,12 @@ void HelloHdrDrawingProgram::Draw()
 		model = glm::mat4_cast(quaternion)*model;
 		
 
-		corridorShader.SetMat4("model", model);
+		modelForwardShader.SetMat4("model", model);
 		corridorPlane.Draw();
 	}
 	lightShader.Bind();
 	//Draw lights
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < lightNmb; i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, lights[i].position);
@@ -219,7 +223,6 @@ void HelloHdrDrawingProgram::Draw()
 		if (first_iteration)
 			first_iteration = false;
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//Show hdr quad
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	hdrShader.Bind();

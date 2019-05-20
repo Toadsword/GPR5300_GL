@@ -38,7 +38,7 @@ void Shader::CompileSource(std::string vertexShaderPath, std::string fragmentSha
 	if (!success)
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+		std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << vertexShaderPath << std::endl << infoLog << std::endl;
 		return;
 	}
 
@@ -52,7 +52,7 @@ void Shader::CompileSource(std::string vertexShaderPath, std::string fragmentSha
 	if (!success)
 	{
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
+		std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << fragmentShaderPath << std::endl<< infoLog << std::endl;
 		return;
 	}
 
@@ -64,7 +64,7 @@ void Shader::CompileSource(std::string vertexShaderPath, std::string fragmentSha
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
 	if (!success) {
 		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cerr << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
+		std::cerr << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << vertexShaderPath << std::endl << fragmentShaderPath << std::endl <<infoLog << std::endl;
 		return;
 	}
 
@@ -356,12 +356,20 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	int width, height, nrChannels;
 
 	int reqComponents = 0;
-	if (extension == ".jpg" || extension == ".tga")
+	if (extension == ".jpg" || extension == ".tga" || extension == ".hdr")
 		reqComponents = 3;
 	else if (extension == ".png")
 		reqComponents = 4;
 
-	unsigned char *data = stbi_load(filename, &width, &height, &nrChannels, reqComponents);
+	void *data = nullptr;
+	if(extension == ".hdr")
+	{
+		data = stbi_loadf(filename, &width, &height, &reqComponents, 0);
+	}
+	else 
+	{
+		data = stbi_load(filename, &width, &height, &nrChannels, reqComponents);
+	}
 	if (data == nullptr)
 	{
 		std::cerr << "[Error] Texture: cannot load " << filename << "\n";
@@ -373,7 +381,7 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampWrap ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth?GL_LINEAR:GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, smooth ? GL_LINEAR : GL_NEAREST);
 	if(mipMaps)
 	{
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, smooth ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_LINEAR);
@@ -389,6 +397,10 @@ unsigned stbCreateTexture(const char* filename, bool smooth, bool mipMaps, bool 
 	else if (extension == ".png")
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	}
+	else if(extension == ".hdr")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
 	}
 	if (mipMaps)
 	{
@@ -409,10 +421,11 @@ unsigned LoadCubemap(std::vector<std::string>& faces)
 	for (unsigned int i = 0; i < faces.size(); i++)
 	{
 		unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		std::string extension = GetFilenameExtension(faces[i]);
 		if (data)
 		{
 			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+				0, extension == ".hdr"?GL_RGB16F:GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
 			);
 			stbi_image_free(data);
 		}

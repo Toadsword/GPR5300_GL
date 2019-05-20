@@ -303,6 +303,8 @@ void Engine::UpdateUi()
 		if(selectedDrawingProgram != -1)
 		{
 			auto* drawingProgram = drawingPrograms[selectedDrawingProgram];
+
+			drawingProgram->UpdateUi();
 			auto& shaders = drawingProgram->GetShaders();
 			for(int i = 0; i < shaders.size();i++)
 			{
