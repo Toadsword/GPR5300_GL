@@ -5,6 +5,8 @@
 #include <graphics.h>
 #include <geometry.h>
 
+#include <imgui.h>
+
 
 #define Camera
 #ifdef  Camera
@@ -76,10 +78,8 @@ struct FireflyParticle {
 		return this->cameradistance > that.cameradistance;
 	}
 };
+
 const int MaxParticles = 100;
-const glm::vec3 botRightLimit = glm::vec3(-10, -10, -10);
-const glm::vec3 topLeftLimit = glm::vec3(10, 10, 10);
-const glm::vec3 range = botRightLimit - topLeftLimit;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -88,12 +88,20 @@ public:
 	void Draw() override;
 	void Destroy() override;
 
+	void UpdateUi() override;
+
 	int ProcessParticles(float dt);
 	void SortParticles();
 
 private:
+	//Consts (Editable by Imgui)
+	int NumFireflies = MaxParticles;
+	float botRightLimit[3] = { -10.0f, -10.0f, -10.0f };
+	int range[3] = { 10, 10, 10 };
+
 	Shader fireflyShaderProgram;
 	Shader blurShader;
+	Shader hdrShader;
 
 	Plane hdrPlane;
 	unsigned hdrFBO = 0;
@@ -131,6 +139,7 @@ private:
 
 	std::vector<FireflyParticle> ParticlesContainer;
 	int LastUsedParticle = 0;
+	float exposure = 1.0f;
 
 	float particle_position[3 * MaxParticles];
 
@@ -144,13 +153,13 @@ void FireflyDrawingProgram::Init()
 	auto* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 
-	ParticlesContainer.resize(MaxParticles);
+	ParticlesContainer.resize(NumFireflies);
 	//Init particles
-	for (int i = 0; i < MaxParticles; i++) {
+	for (int i = 0; i < NumFireflies; i++) {
 		ParticlesContainer[i].destPos = glm::vec3(
-			rand() % 20 + botRightLimit.x,
-			rand() % 20 + botRightLimit.y,
-			rand() % 20 + botRightLimit.z
+			rand() % 20 + botRightLimit[0],
+			rand() % 20 + botRightLimit[1],
+			rand() % 20 + botRightLimit[2]
 		);
 
 		ParticlesContainer[i].timeSinceBegin = -1.0f;
@@ -160,11 +169,12 @@ void FireflyDrawingProgram::Init()
 		LastUsedParticle = i;
 	}
 
+	fireflyShaderProgram.CompileSource("shaders/666_main_scene/billboard_particle.vert", "shaders/666_main_scene/full_transparent.frag"); // quad
 	shaders.push_back(&fireflyShaderProgram);
 
-	fireflyShaderProgram.CompileSource(
-		"shaders/666_main_scene/billboard_particle.vert",
-		"shaders/666_main_scene/full_transparent.frag"); // quad
+	hdrShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/hdr.frag");
+	shaders.push_back(&hdrShader);
+
 	blurShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/blur.frag");
 
 	fireflyTexture = stbCreateTexture("data/sprites/firefly.png", true, true, true);
@@ -191,6 +201,19 @@ void FireflyDrawingProgram::Init()
 			GL_TEXTURE_2D, hdrColorBuffer[i], 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, attachments);
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32,
+		config.screenWidth,
+		config.screenHeight);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
+		rboDepth);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 
 	glGenFramebuffers(2, pingpongFBO);
@@ -210,7 +233,6 @@ void FireflyDrawingProgram::Init()
 			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongBuffer[i], 0
 		);
 	}
-
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////			BINDING VAO			//////////////////////////
@@ -254,20 +276,25 @@ void FireflyDrawingProgram::Init()
 
 void FireflyDrawingProgram::Draw()
 {
-	glEnable(GL_DEPTH_TEST);
 	Engine* engine = Engine::GetPtr();
 	Configuration& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 	float dt = engine->GetDeltaTime();
 
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//Bind frame buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Use our shader
 	fireflyShaderProgram.Bind();
 
 	// Bind our texture in Texture Unit 0
 	// Set our "myTextureSampler" sampler to use Texture Unit 0
+	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fireflyTexture);
 	glBindVertexArray(VAO);
 
@@ -293,7 +320,6 @@ void FireflyDrawingProgram::Draw()
 	// but faster.
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticleCount);
 
-	glBindVertexArray(0);
 
 	bool horizontal = true, first_iteration = true;
 	int amount = 10;
@@ -314,6 +340,18 @@ void FireflyDrawingProgram::Draw()
 	}
 	//Show hdr quad
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	hdrShader.Bind();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrColorBuffer[0]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, pingpongBuffer[!horizontal]);
+	hdrShader.SetInt("hdrBuffer", 0);
+	hdrShader.SetInt("bloomBlur", 1);
+	hdrShader.SetFloat("exposure", exposure);
+	hdrPlane.Draw();
+
+	glBindVertexArray(0);
 }
 
 void FireflyDrawingProgram::Destroy()
@@ -332,6 +370,16 @@ void FireflyDrawingProgram::Destroy()
 	glDeleteBuffers(2, &EBO);
 }
 
+void FireflyDrawingProgram::UpdateUi()
+{
+	ImGui::Separator();
+	ImGui::InputInt3("Limite top left", range);
+	ImGui::InputFloat3("Limite bottom right", botRightLimit);
+	ImGui::SliderInt("Num fireflies", &NumFireflies, 1, MaxParticles);
+	ImGui::SliderFloat("Exposure", &exposure, 0.1f, 5.0f);
+	ImGui::Separator();
+}
+
 int FireflyDrawingProgram::ProcessParticles(float dt)
 {
 	Engine* engine = Engine::GetPtr();
@@ -339,7 +387,7 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 
 	// Simulate all particles
 	int ParticlesCount = 0;
-	for (int i = 0; i < MaxParticles; i++) 
+	for (int i = 0; i < NumFireflies; i++) 
 	{
 		FireflyParticle& p = ParticlesContainer[i]; // shortcut
 
@@ -348,9 +396,9 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		{
 			p.startPos = p.destPos;
 			p.destPos = glm::vec3(
-				rand() % 20 + botRightLimit.x,
-				rand() % 20 + botRightLimit.y,
-				rand() % 20 + botRightLimit.z
+				rand() % range[0] + botRightLimit[0],
+				rand() % range[1] + botRightLimit[1],
+				rand() % range[2] + botRightLimit[2]
 			);
 			p.diffPos = p.destPos - p.startPos;
 
@@ -390,7 +438,7 @@ int main(int argc, char** argv)
 	config.screenWidth = 1024;
 	config.screenHeight = 1024;
 	config.windowName = "Main Scene";
-	config.bgColor = { 0,0,0,1 };
+	config.bgColor = { 1,1,1,1 };
 
 #ifdef Camera
 	engine.AddDrawingProgram(new CameraProgram());
