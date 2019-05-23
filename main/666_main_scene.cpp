@@ -97,7 +97,7 @@ private:
 	//Consts (Editable by Imgui)
 	int NumFireflies = MaxParticles;
 	float botRightLimit[3] = { -10.0f, -10.0f, -10.0f };
-	int range[3] = { 10, 10, 10 };
+	int range[3] = { 40, 40, 40 };
 
 	Shader fireflyShaderProgram;
 	Shader blurShader;
@@ -139,13 +139,16 @@ private:
 	int LastUsedParticle = 0;
 	float exposure = 2.1f;
 
+	
 	float particlesPosition[3 * MaxParticles];
-	// 3 for color (rgb)
+	float particlesColor[3 * MaxParticles];
 	// 1 for scale (for the 3 axis)
-	float particleData[4 * MaxParticles];
+	// 1 for glowingEffect
+	float particlesScale[3 * MaxParticles];
 
 	unsigned int particlesPositionBuffer;
-	unsigned int particlesDataBuffer;
+	unsigned int particlesColorBuffer;
+	unsigned int particlesScaleBuffer;
 };
 
 void FireflyDrawingProgram::Init()
@@ -172,10 +175,13 @@ void FireflyDrawingProgram::Init()
 
 		// Buffering init values for each particle
 		//float exposure = rand() % 64;
-		particleData[4 * i + 0] = (rand() % 32) / 256.0f;	// color (r)
-		particleData[4 * i + 1] = (rand() % 78) / 256.0f;	// color (g)
-		particleData[4 * i + 2] = (rand() % 32) / 256.0f;		// color (b)
-		particleData[4 * i + 3] = rand() % 4 / 5.0f + 0.8f;				// scale (for the 3 axis)
+		particlesColor[3 * i + 0] = (rand() % 32) / 256.0f;	// color (r)
+		particlesColor[3 * i + 1] = (rand() % 78) / 256.0f;	// color (g)
+		particlesColor[3 * i + 2] = (rand() % 32) / 256.0f;	// color (b)
+
+		particlesScale[3 * i + 0] = (rand() % 4) / 5.0f + 0.8f;	// scale (for the 3 axis)
+		particlesScale[3 * i + 1] = std::max((rand() % 10) / 10.0f - 0.3f, 0.2f) / 3.0f; // glowScale
+		particlesScale[3 * i + 2] = (rand() % 6 + 4.0f) / 2.0f; // glowSpeed
 	}
 
 	fireflyShaderProgram.CompileSource("shaders/666_main_scene/firefly.vert", "shaders/666_main_scene/firefly.frag"); // quad
@@ -248,7 +254,8 @@ void FireflyDrawingProgram::Init()
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	glGenBuffers(2, &VBO[0]);
-	glGenBuffers(1, &particlesDataBuffer);
+	glGenBuffers(1, &particlesColorBuffer);
+	glGenBuffers(1, &particlesScaleBuffer);
 	glGenBuffers(1, &EBO);
 
 	glGenVertexArrays(1, &VAO); //like: new VAO()
@@ -269,24 +276,31 @@ void FireflyDrawingProgram::Init()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	//bind particle Infos
+	//bind particle Color
 	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, particlesDataBuffer);
-	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 4 * sizeof(float), particleData, GL_STATIC_DRAW);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0); // Size of Data
+	glBindBuffer(GL_ARRAY_BUFFER, particlesColorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), particlesColor, GL_STATIC_DRAW);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Size of Data
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, MaxParticles * 4 * sizeof(float), &particleData);
+
+	glEnableVertexAttribArray(3);
+	glBindBuffer(GL_ARRAY_BUFFER, particlesScaleBuffer);
+	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), particlesScale, GL_STATIC_DRAW);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Size of Data
 	//glBufferSubData(GL_ARRAY_BUFFER, 0, MaxParticles * 4 * sizeof(float), &particleData);
 
 	//bind particle position data
-	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
 	glGenBuffers(1, &particlesPositionBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
 	// Initialize with empty (NULL) buffer : it will be updated later, each frame.
 	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), NULL, GL_STATIC_DRAW);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Size of Position
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Size of Position
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glVertexAttribDivisor(2, 1);
 	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
 
 	//unbind Vertex Array
 	glBindVertexArray(0);
@@ -325,6 +339,7 @@ void FireflyDrawingProgram::Draw()
 	fireflyShaderProgram.SetVec3("CameraRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
 	fireflyShaderProgram.SetVec3("CameraUp", viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
 	fireflyShaderProgram.SetMat4("VP", projection * viewMatrix);
+	fireflyShaderProgram.SetFloat("time", engine->GetTimeSinceInit());
 
 	//Update the buffer with all the positions
 	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
