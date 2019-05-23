@@ -79,7 +79,7 @@ struct FireflyParticle {
 	}
 };
 
-const int MaxParticles = 100;
+const int MaxParticles = 50000;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -192,7 +192,7 @@ void FireflyDrawingProgram::Init()
 	
 	blurShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/blur.frag");
 
-	fireflyTexture = stbCreateTexture("data/sprites/firefly5.png", true, true, true);
+	fireflyTexture = stbCreateTexture("data/sprites/firefly6.png", true, true, true);
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////			BINDING HDR 		//////////////////////////
@@ -313,14 +313,11 @@ void FireflyDrawingProgram::Draw()
 	auto& camera = engine->GetCamera();
 	float dt = engine->GetDeltaTime();
 
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//Bind frame buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	
 	// Use our shader
 	fireflyShaderProgram.Bind();
 
