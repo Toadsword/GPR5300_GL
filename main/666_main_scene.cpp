@@ -135,15 +135,17 @@ private:
 		1, 2, 3    // second triangle
 	};
 
-	unsigned int instanceVBO;
-
 	std::vector<FireflyParticle> ParticlesContainer;
 	int LastUsedParticle = 0;
-	float exposure = 1.0f;
+	float exposure = 2.1f;
 
-	float particle_position[3 * MaxParticles];
+	float particlesPosition[3 * MaxParticles];
+	// 3 for color (rgb)
+	// 1 for scale (for the 3 axis)
+	float particleData[4 * MaxParticles];
 
-	unsigned int particles_position_buffer;
+	unsigned int particlesPositionBuffer;
+	unsigned int particlesDataBuffer;
 };
 
 void FireflyDrawingProgram::Init()
@@ -167,17 +169,24 @@ void FireflyDrawingProgram::Init()
 		ParticlesContainer[i].cameradistance = -1.0f;
 
 		LastUsedParticle = i;
+
+		// Buffering init values for each particle
+		//float exposure = rand() % 64;
+		particleData[4 * i + 0] = (rand() % 32) / 256.0f;	// color (r)
+		particleData[4 * i + 1] = (rand() % 78) / 256.0f;	// color (g)
+		particleData[4 * i + 2] = (rand() % 32) / 256.0f;		// color (b)
+		particleData[4 * i + 3] = rand() % 4 / 5.0f + 0.8f;				// scale (for the 3 axis)
 	}
 
-	fireflyShaderProgram.CompileSource("shaders/666_main_scene/billboard_particle.vert", "shaders/666_main_scene/full_transparent.frag"); // quad
+	fireflyShaderProgram.CompileSource("shaders/666_main_scene/firefly.vert", "shaders/666_main_scene/firefly.frag"); // quad
 	shaders.push_back(&fireflyShaderProgram);
 
 	hdrShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/hdr.frag");
 	shaders.push_back(&hdrShader);
-
+	
 	blurShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/blur.frag");
 
-	fireflyTexture = stbCreateTexture("data/sprites/firefly.png", true, true, true);
+	fireflyTexture = stbCreateTexture("data/sprites/firefly5.png", true, true, true);
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////			BINDING HDR 		//////////////////////////
@@ -239,6 +248,7 @@ void FireflyDrawingProgram::Init()
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	glGenBuffers(2, &VBO[0]);
+	glGenBuffers(1, &particlesDataBuffer);
 	glGenBuffers(1, &EBO);
 
 	glGenVertexArrays(1, &VAO); //like: new VAO()
@@ -259,16 +269,24 @@ void FireflyDrawingProgram::Init()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	//bind particle position data
+	//bind particle Infos
 	glEnableVertexAttribArray(2);
-	glGenBuffers(1, &particles_position_buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, particles_position_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, particlesDataBuffer);
+	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 4 * sizeof(float), particleData, GL_STATIC_DRAW);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0); // Size of Data
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, MaxParticles * 4 * sizeof(float), &particleData);
+
+	//bind particle position data
+	glEnableVertexAttribArray(3);
+	glGenBuffers(1, &particlesPositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
 	// Initialize with empty (NULL) buffer : it will be updated later, each frame.
 	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), NULL, GL_STATIC_DRAW);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Size of Position
 
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisor(3, 1);
 
 	//unbind Vertex Array
 	glBindVertexArray(0);
@@ -309,9 +327,9 @@ void FireflyDrawingProgram::Draw()
 	fireflyShaderProgram.SetMat4("VP", projection * viewMatrix);
 
 	//Update the buffer with all the positions
-	glBindBuffer(GL_ARRAY_BUFFER, particles_position_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
 	//glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), NULL, GL_STREAM_DRAW); // Buffer orphaning, a common way to improve streaming perf. See above link for details.
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particle_position);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesPosition);
 
 	// Draw the particules !
 	// This draws many times a small triangle_strip (which looks like a quad).
@@ -319,7 +337,6 @@ void FireflyDrawingProgram::Draw()
 	// for(i in ParticlesCount) : glDrawArrays(GL_TRIANGLE_STRIP, 0, 4), 
 	// but faster.
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticleCount);
-
 
 	bool horizontal = true, first_iteration = true;
 	int amount = 10;
@@ -360,7 +377,7 @@ void FireflyDrawingProgram::Destroy()
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(2);
 
-	glDeleteBuffers(1, &particles_position_buffer);
+	glDeleteBuffers(1, &particlesPositionBuffer);
 
 	glDeleteTextures(1, &fireflyTexture);
 
@@ -382,9 +399,6 @@ void FireflyDrawingProgram::UpdateUi()
 
 int FireflyDrawingProgram::ProcessParticles(float dt)
 {
-	Engine* engine = Engine::GetPtr();
-	auto& camera = engine->GetCamera();
-
 	// Simulate all particles
 	int ParticlesCount = 0;
 	for (int i = 0; i < NumFireflies; i++) 
@@ -402,20 +416,20 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 			);
 			p.diffPos = p.destPos - p.startPos;
 
-			p.timeToEnd = glm::length(p.diffPos) / 2.0f;
+			p.timeToEnd = glm::length(p.diffPos) / (rand() % 4 * 1.0f + 1);
 			p.timeSinceBegin = p.timeToEnd;
 		}
 
 		//Parametric blend, ease in and out. Results in this : https://www.wolframalpha.com/input/?i=t%5E2(3-2t)
-		// Go from 0 to 1.
+		// Go from 0 to 1. (due to 1 - ...)
 		float t = 1 - p.timeSinceBegin / p.timeToEnd;
 		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
 
 
 		// Fill the GPU buffer
-		particle_position[3 * i + 0] = p.startPos.x + p.diffPos.x * change;
-		particle_position[3 * i + 1] = p.startPos.y + p.diffPos.y * change;
-		particle_position[3 * i + 2] = p.startPos.z + p.diffPos.z * change;
+		particlesPosition[3 * i + 0] = p.startPos.x + p.diffPos.x * change;
+		particlesPosition[3 * i + 1] = p.startPos.y + p.diffPos.y * change;
+		particlesPosition[3 * i + 2] = p.startPos.z + p.diffPos.z * change;
 
 		ParticlesCount++;
 	}

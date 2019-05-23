@@ -191,7 +191,19 @@ void Engine::Loop()
 			case SDL_SCANCODE_LALT:
 				camera.SwitchWrapMode();
 				break;
+			case SDL_SCANCODE_LSHIFT:
+				camera.MovementSpeed = 5.0f;
+				break;
 			default:
+				break;
+			}
+		}
+		if (event.type == SDL_KEYUP)
+		{
+			switch (event.key.keysym.scancode)
+			{	
+			case SDL_SCANCODE_LSHIFT:
+				camera.MovementSpeed = 1.0f;
 				break;
 			}
 		}
