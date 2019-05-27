@@ -70,16 +70,16 @@ void CameraProgram::ProcessInput()
 #ifdef Firefly
 // CPU representation of a particle
 struct FireflyParticle {
-	glm::vec3 startPos, destPos, diffPos;
-	float timeSinceBegin, timeToEnd, cameradistance; // *Squared* distance to the camera. if dead : -1.0f
-
+	glm::vec3 startPos, destPos, diffPos, color;
+	float timeSinceBegin, timeToEnd, cameraDistance; // *Squared* distance to the camera. if dead : -1.0f
+	float scale, glowScale, glowSpeed;
 	bool operator<(const FireflyParticle& that) const {
 		// Sort in reverse order : far particles drawn first.
-		return this->cameradistance > that.cameradistance;
+		return this->cameraDistance > that.cameraDistance;
 	}
 };
 
-const int MaxParticles = 500;
+const int MaxParticles = 100000;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -170,19 +170,19 @@ void FireflyDrawingProgram::Init()
 
 		ParticlesContainer[i].timeSinceBegin = -1.0f;
 		ParticlesContainer[i].timeToEnd = -1.0f;
-		ParticlesContainer[i].cameradistance = -1.0f;
+		ParticlesContainer[i].cameraDistance = -1.0f;
 
 		LastUsedParticle = i;
 
 		// Buffering init values for each particle
 		//float exposure = rand() % 64;
-		particlesColor[3 * i + 0] = (rand() % 32) / 256.0f;	// color (r)
-		particlesColor[3 * i + 1] = (rand() % 78) / 256.0f;	// color (g)
-		particlesColor[3 * i + 2] = (rand() % 32) / 256.0f;	// color (b)
+		ParticlesContainer[i].color.r = (rand() % 32) / 256.0f;
+		ParticlesContainer[i].color.g = (rand() % 78) / 256.0f;
+		ParticlesContainer[i].color.b = (rand() % 32) / 256.0f;
 
-		particlesScale[3 * i + 0] = (rand() % 4) / 5.0f + 0.8f;	// scale (for the 3 axis)
-		particlesScale[3 * i + 1] = std::max((rand() % 10) / 10.0f - 0.3f, 0.2f) / 3.0f; // glowScale
-		particlesScale[3 * i + 2] = (rand() % 6 + 4.0f) / 2.0f; // glowSpeed
+		ParticlesContainer[i].scale = (rand() % 4) / 5.0f + 0.8f;
+		ParticlesContainer[i].glowScale = std::max((rand() % 10) / 10.0f - 0.3f, 0.2f) / 3.0f;
+		ParticlesContainer[i].glowSpeed = (rand() % 6 + 4.0f) / 2.0f;
 	}
 
 	fireflyShaderProgram.CompileSource("shaders/666_main_scene/firefly.vert", "shaders/666_main_scene/firefly.frag"); // quad
@@ -198,7 +198,6 @@ void FireflyDrawingProgram::Init()
 	//////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////			BINDING HDR 		//////////////////////////
 	//////////////////////////////////////////////////////////////////////////////////////
-
 	hdrPlane.Init();
 	glGenFramebuffers(1, &hdrFBO);
 
@@ -237,7 +236,7 @@ void FireflyDrawingProgram::Init()
 		glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
 		glBindTexture(GL_TEXTURE_2D, pingpongBuffer[i]);
 		glTexImage2D(
-			GL_TEXTURE_2D, 0, GL_RGB16F, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_FLOAT, NULL
+			GL_TEXTURE_2D, 0, GL_RGBA16F, config.screenWidth, config.screenHeight, 0, GL_RGBA, GL_FLOAT, NULL
 		);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -316,28 +315,18 @@ void FireflyDrawingProgram::Draw()
 	glm::mat4 viewMatrix = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 
-	//glEnable(GL_DEPTH_TEST);
 
 	//Bind frame buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
-	//Clear color
-	glClearColor(0, 0, 0, 0);
+	//Clear color OF THE BUFFER
+	glClearColor(1, 1, 1, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glEnable(GL_STENCIL_TEST);
 
-	// Draw floor
-	glStencilFunc(GL_ALWAYS, 1, 0xFF); // Set any stencil to 1
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilMask(0xFF); // Write to stencil buffer
-
-	glClear(GL_STENCIL_BUFFER_BIT); // Clear stencil buffer (0 by default)
-
-	glDepthMask(GL_FALSE); // Don't write to depth buffer
-
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	// Use our shader
 	fireflyShaderProgram.Bind();
 
@@ -359,13 +348,18 @@ void FireflyDrawingProgram::Draw()
 	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesPosition);
 
+	// Update the buffer with all the Colors
+	glBindBuffer(GL_ARRAY_BUFFER, particlesColorBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesColor);
+
+	// Update the buffer with all the Scale
+	glBindBuffer(GL_ARRAY_BUFFER, particlesScaleBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesScale);
+
 	// Draw the particles
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticleCount);
 
-	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // Pass test if stencil value is 1
-	glStencilMask(0x00); // Don't write anything to stencil buffer
-
-	glDepthMask(GL_TRUE); // Write to depth buffer
+	//glDepthMask(GL_FALSE); // Don't write to depth buffer
 
 	// Post processing pass
 	bool horizontal = true, first_iteration = true;
@@ -387,7 +381,7 @@ void FireflyDrawingProgram::Draw()
 	}
 	//Show hdr quad
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+	
 	hdrShader.Bind();
 
 	glActiveTexture(GL_TEXTURE0);
@@ -399,6 +393,7 @@ void FireflyDrawingProgram::Draw()
 	hdrShader.SetFloat("exposure", exposure);
 	hdrPlane.Draw();
 
+	glDisable(GL_BLEND);
 	glBindVertexArray(0);
 }
 
@@ -444,6 +439,9 @@ void FireflyDrawingProgram::UpdateUi()
 
 int FireflyDrawingProgram::ProcessParticles(float dt)
 {
+	auto* engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+
 	// Simulate all particles
 	int ParticlesCount = 0;
 
@@ -478,10 +476,20 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
 
 
+		glm::vec3 pNewPos = p.startPos + p.diffPos * change;
+		p.cameraDistance = glm::length(pNewPos - camera.Position);
 		// Calculate position and fill GPU budder
-		particlesPosition[3 * i + 0] = p.startPos.x + p.diffPos.x * change;
-		particlesPosition[3 * i + 1] = p.startPos.y + p.diffPos.y * change;
-		particlesPosition[3 * i + 2] = p.startPos.z + p.diffPos.z * change;
+		particlesPosition[3 * i + 0] = pNewPos.x;
+		particlesPosition[3 * i + 1] = pNewPos.y;
+		particlesPosition[3 * i + 2] = pNewPos.z;
+
+		particlesColor[3 * i + 0] = p.color.r;
+		particlesColor[3 * i + 1] = p.color.g;
+		particlesColor[3 * i + 2] = p.color.b;
+
+		particlesScale[3 * i + 0] = p.scale;
+		particlesScale[3 * i + 1] = p.glowScale;
+		particlesScale[3 * i + 2] = p.glowSpeed;
 
 		ParticlesCount++;
 	}
@@ -563,8 +571,8 @@ void SkyboxDrawingProgram::Init()
 	programName = "Skybox";
 
 	cubemapShader.CompileSource(
-		"shaders/16_hello_cubemaps/cubemaps.vert",
-		"shaders/16_hello_cubemaps/cubemaps.frag"
+		"shaders/666_main_scene/skybox.vert",
+		"shaders/666_main_scene/skybox.frag"
 	);
 	shaders.push_back(&cubemapShader);
 	/*std::vector<std::string> faces =
@@ -662,6 +670,7 @@ int main(int argc, char** argv)
 #ifdef Firefly
 	engine.AddDrawingProgram(new FireflyDrawingProgram());
 #endif
+
 
 
 	engine.Init();
