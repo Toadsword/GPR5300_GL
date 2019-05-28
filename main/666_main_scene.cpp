@@ -4,10 +4,69 @@
 #include <engine.h>
 #include <graphics.h>
 #include <geometry.h>
+#include <model.h>
 
 #include <imgui.h>
 #include <Remotery.h>
 
+
+#define Camera
+#ifdef  Camera
+class CameraProgram : public DrawingProgram
+{
+public:
+	void Init() override;
+	void Draw() override;
+	void Destroy() override;
+	void ProcessInput();
+};
+
+void CameraProgram::Init()
+{
+	programName = "Camera";
+}
+
+void CameraProgram::Draw()
+{
+	ProcessInput();
+}
+
+void CameraProgram::Destroy()
+{
+}
+
+void CameraProgram::ProcessInput()
+{
+	Engine * engine = Engine::GetPtr();
+	auto& camera = engine->GetCamera();
+	auto& inputManager = engine->GetInputManager();
+
+#ifdef USE_SDL2
+	if (inputManager.GetButton(SDLK_w))
+	{
+		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_s))
+	{
+		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_a))
+	{
+		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
+	}
+	if (inputManager.GetButton(SDLK_d))
+	{
+		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
+	}
+#endif
+
+	auto mousePos = inputManager.GetMousePosition();
+
+	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+
+	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+}
+#endif
 
 #define Terrain
 #ifdef Terrain
@@ -189,61 +248,62 @@ void TerrainDrawingProgram::UpdateUi()
 }
 #endif
 
-#define Camera
-#ifdef  Camera
-class CameraProgram : public DrawingProgram
+#define Trees
+#ifdef Trees
+class TreeDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
 	void Draw() override;
 	void Destroy() override;
-	void ProcessInput();
+
+private:
+	Shader modelShaderProgram;
+	Model model;
 };
 
-void CameraProgram::Init()
+void TreeDrawingProgram::Init()
 {
-	programName = "Camera";
+	programName = "Tree";
+
+	modelShaderProgram.CompileSource(
+		"shaders/666_main_scene/model.vert",
+		"shaders/666_main_scene/model.frag");
+	shaders.push_back(&modelShaderProgram);
+
+	model.Init("data/models/nanosuit2/nanosuit.blend");
 }
 
-void CameraProgram::Draw()
+void TreeDrawingProgram::Draw()
 {
-	ProcessInput();
-}
-
-void CameraProgram::Destroy()
-{
-}
-
-void CameraProgram::ProcessInput()
-{
-	Engine * engine = Engine::GetPtr();
+	Engine* engine = Engine::GetPtr();
+	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
-	auto& inputManager = engine->GetInputManager();
 
-#ifdef USE_SDL2
-	if (inputManager.GetButton(SDLK_w))
-	{
-		camera.ProcessKeyboard(FORWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(SDLK_s))
-	{
-		camera.ProcessKeyboard(BACKWARD, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(SDLK_a))
-	{
-		camera.ProcessKeyboard(LEFT, engine->GetDeltaTime());
-	}
-	if (inputManager.GetButton(SDLK_d))
-	{
-		camera.ProcessKeyboard(RIGHT, engine->GetDeltaTime());
-	}
-#endif
+	glEnable(GL_DEPTH_TEST);
+	//glFrontFace(GL_CW);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	modelShaderProgram.Bind();
+	modelShaderProgram.SetMat4("view", view);
+	modelShaderProgram.SetMat4("projection", projection);
 
-	auto mousePos = inputManager.GetMousePosition();
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
+	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
 
-	camera.ProcessMouseMovement(mousePos.x, mousePos.y, true);
+	modelShaderProgram.SetMat4("model", model);
 
-	camera.ProcessMouseScroll(inputManager.GetMouseWheelDelta());
+	this->model.Draw(modelShaderProgram);
+
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+}
+
+void TreeDrawingProgram::Destroy()
+{
 }
 #endif
 
