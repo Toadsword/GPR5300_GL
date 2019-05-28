@@ -385,7 +385,7 @@ private:
 
 	// 1 for scale (for the 3 axis)
 	// 1 for glowing effect
-	// 1 for glower speed
+	// 1 for glowing speed
 	GLfloat particlesScale[3 * MaxParticles];
 
 	GLuint particlesPositionBuffer;
@@ -712,12 +712,12 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		}
 
 		// Parametric blend, ease in and out. Results in this : https://www.wolframalpha.com/input/?i=t%5E2(3-2t)
-		// Go from 0 to 1. (due to 1 - ...)
+		// Go from 0 to 1. (due to 1 - {...})
 		float t = 1 - p.timeSinceBegin / p.timeToEnd;
 		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
 
 
-		p.position = p.startPos + p.diffPos * change;
+		p.position = (p.startPos + p.diffPos * change);
 		// Culling of the particles (if behind of the camera, then we don't render them.
 		p.cameraDistance = glm::dot(p.position, camera.Front) - glm::dot(camera.Position, camera.Front);
 		if(p.cameraDistance > 0.0f)
