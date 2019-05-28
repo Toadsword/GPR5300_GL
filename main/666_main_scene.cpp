@@ -150,7 +150,7 @@ void TerrainDrawingProgram::Draw()
 	shaderProgram.SetFloat("heightOrigin", terrainOriginY);
 
 	shaderProgram.SetInt("heightMap", 0);
-	shaderProgram.SetInt("diffuseMap", 0);
+	shaderProgram.SetInt("diffuseMap", 1);
 	shaderProgram.SetInt("normalMap", 2);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -851,6 +851,10 @@ int main(int argc, char** argv)
 
 #ifdef Terrain
 	engine.AddDrawingProgram(new TerrainDrawingProgram());
+#endif
+
+#ifdef Trees
+	engine.AddDrawingProgram(new TreeDrawingProgram());
 #endif
 
 #ifdef Firefly
