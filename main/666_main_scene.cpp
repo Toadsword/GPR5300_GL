@@ -6,7 +6,189 @@
 #include <geometry.h>
 
 #include <imgui.h>
+#include <Remotery.h>
 
+
+#define Terrain
+#ifdef Terrain
+
+class TerrainDrawingProgram : public DrawingProgram
+{
+public:
+	void Init() override;
+	void Draw() override;
+	void Destroy() override;
+	void UpdateUi() override;
+private:
+	Shader shaderProgram;
+
+	float lightPos[3] = { 0,0,-9.5 };
+
+	unsigned VBO[2] = {};
+	unsigned int VAO = 0;
+	unsigned int EBO = 0;
+
+	unsigned terrainTexture = 0;
+	unsigned terrainHeightMap = 0;
+	unsigned terrainNormalMap = 0;
+
+	float* vertices = nullptr;
+	float* texCoords = nullptr;
+	unsigned int* indices = nullptr;
+
+	float terrainOriginY = -1.0f;
+	float terrainElevationFactor = 5.0f;
+
+	const size_t terrainWidth = 512l;
+	const size_t terrainHeight = 512l;
+	const float terrainResolution = 0.2f;
+
+	const size_t verticesCount = terrainWidth * terrainHeight;
+	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
+
+};
+
+void TerrainDrawingProgram::Init()
+{
+	programName = "Terrain";
+
+	vertices = (float*)calloc(3 * verticesCount, sizeof(float));//vec3, so 3 floats
+	texCoords = (float*)calloc(2 * verticesCount, sizeof(float));//vec2, so 2 floats
+
+	for (size_t i = 0l; i < verticesCount; i++)
+	{
+		vertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (float)(i % terrainWidth) * terrainResolution;//x
+		vertices[3 * i + 1] = 0.0f;//y
+		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
+	}
+	for (size_t i = 0l; i < verticesCount; i++)
+	{
+		const float width = terrainWidth;
+		const float height = terrainHeight;
+		texCoords[2 * i] = (float)((i % terrainWidth) + 1) / (width + 1);
+		texCoords[2 * i + 1] = (float)((i / terrainWidth) + 1) / (height + 1);
+	}
+
+	indices = (unsigned *)calloc(3l * faceCount, sizeof(unsigned));
+	size_t quad = 0;
+	for (size_t y = 0; y < terrainHeight - 1; y++)
+	{
+		for (size_t x = 0; x < terrainWidth - 1; x++)
+		{
+			const unsigned origin = x + y * terrainWidth;
+			const unsigned originBottom = origin + terrainWidth;
+
+			//face1
+			indices[6 * quad] = origin;
+			indices[6 * quad + 1] = origin + 1;
+			indices[6 * quad + 2] = originBottom;
+
+			//face2
+			indices[6 * quad + 3] = origin + 1;
+			indices[6 * quad + 4] = originBottom + 1;
+			indices[6 * quad + 5] = originBottom;
+
+			quad++;
+		}
+	}
+
+	shaderProgram.CompileSource("shaders/666_main_scene/terrain.vert", "shaders/666_main_scene/terrain.frag");
+	shaders.push_back(&shaderProgram);
+
+	terrainHeightMap = stbCreateTexture("data/terrain/plains/HeightMap.png", true, false);
+	terrainTexture = stbCreateTexture("data/terrain/plains/texture.png", true, false);
+	terrainNormalMap = stbCreateTexture("data/terrain/plains/NormalMap.png", true, false);
+
+	glGenBuffers(2, &VBO[0]);
+	glGenBuffers(1, &EBO);
+
+	glGenVertexArrays(1, &VAO); //like: new VAO()
+	// 1. bind Vertex Array Object
+	glBindVertexArray(VAO);//Now use our VAO
+	//bind vertices data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * 3 * sizeof(float), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	//bind texture coords data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * 2 * sizeof(float), texCoords, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	//bind vertices index
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceCount * 3 * sizeof(unsigned), indices, GL_STATIC_DRAW);
+	//unbind Vertex Array
+	glBindVertexArray(0);
+}
+
+void TerrainDrawingProgram::Draw()
+{
+	Engine* engine = Engine::GetPtr();
+	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
+
+	rmt_BeginOpenGLSample(HelloTerrainDraw);
+
+	glEnable(GL_DEPTH_TEST);
+	glFrontFace(GL_CW);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 model = glm::mat4(1.0f);
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 1000.0f);
+
+	shaderProgram.Bind();
+	shaderProgram.SetVec3("lightPos", lightPos);
+	shaderProgram.SetVec3("viewPos", camera.Position);
+
+	shaderProgram.SetMat4("view", view);
+	shaderProgram.SetMat4("projection", projection);
+	shaderProgram.SetMat4("model", model);
+	shaderProgram.SetFloat("heightResolution", terrainElevationFactor);
+	shaderProgram.SetFloat("heightOrigin", terrainOriginY);
+
+	shaderProgram.SetInt("heightMap", 0);
+	shaderProgram.SetInt("diffuseMap", 0);
+	shaderProgram.SetInt("normalMap", 2);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, terrainTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
+
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, faceCount * 3, GL_UNSIGNED_INT, 0);
+
+	glBindVertexArray(0);
+
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	rmt_EndOpenGLSample();
+}
+
+void TerrainDrawingProgram::Destroy()
+{
+	free(vertices);
+	free(texCoords);
+	free(indices);
+
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(2, &VBO[0]);
+	glDeleteBuffers(1, &EBO);
+}
+
+void TerrainDrawingProgram::UpdateUi()
+{
+	DrawingProgram::UpdateUi();
+	ImGui::Separator();
+	ImGui::SliderFloat("Terrain Height Mult", &terrainElevationFactor, -10.0f, 10.0f, "height = %.3f");
+	ImGui::SliderFloat("Terrain Height Origin", &terrainOriginY, -10.0f, 10.0f, "height = %.3f");
+}
+#endif
 
 #define Camera
 #ifdef  Camera
@@ -667,11 +849,13 @@ int main(int argc, char** argv)
 	engine.AddDrawingProgram(new SkyboxDrawingProgram());
 #endif
 
+#ifdef Terrain
+	engine.AddDrawingProgram(new TerrainDrawingProgram());
+#endif
+
 #ifdef Firefly
 	engine.AddDrawingProgram(new FireflyDrawingProgram());
 #endif
-
-
 
 	engine.Init();
 
