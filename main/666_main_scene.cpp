@@ -11,7 +11,6 @@
 
 #define Terrain
 #ifdef Terrain
-
 class TerrainDrawingProgram : public DrawingProgram
 {
 public:
@@ -252,7 +251,7 @@ void CameraProgram::ProcessInput()
 #ifdef Firefly
 // CPU representation of a particle
 struct FireflyParticle {
-	glm::vec3 startPos, destPos, diffPos, color;
+	glm::vec3 startPos, destPos, diffPos, position, color;
 	float timeSinceBegin, timeToEnd, cameraDistance; // *Squared* distance to the camera. if dead : -1.0f
 	float scale, glowScale, glowSpeed;
 	bool operator<(const FireflyParticle& that) const {
@@ -261,7 +260,7 @@ struct FireflyParticle {
 	}
 };
 
-const int MaxParticles = 100000;
+const int MaxParticles = 1000;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -518,7 +517,7 @@ void FireflyDrawingProgram::Draw()
 	glBindVertexArray(VAO);
 
 	//Process particles
-	const int ParticleCount = ProcessParticles(dt);
+	const int ParticlesCount = ProcessParticles(dt);
 
 	// Pass billboard reuqired informations to the shader
 	fireflyShaderProgram.SetVec3("CameraRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
@@ -528,18 +527,18 @@ void FireflyDrawingProgram::Draw()
 
 	// Update the buffer with all the positions
 	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesPosition);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesPosition);
 
 	// Update the buffer with all the Colors
 	glBindBuffer(GL_ARRAY_BUFFER, particlesColorBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesColor);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesColor);
 
 	// Update the buffer with all the Scale
 	glBindBuffer(GL_ARRAY_BUFFER, particlesScaleBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticleCount * 3 * sizeof(float), &particlesScale);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesScale);
 
 	// Draw the particles
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticleCount);
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticlesCount);
 
 	//glDepthMask(GL_FALSE); // Don't write to depth buffer
 
@@ -658,12 +657,25 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
 
 
-		glm::vec3 pNewPos = p.startPos + p.diffPos * change;
-		p.cameraDistance = glm::length(pNewPos - camera.Position);
+		p.position = p.startPos + p.diffPos * change;
+		// Culling of the particles (if behind of the camera, then we don't render them.
+		p.cameraDistance = glm::dot(p.position, camera.Front) - glm::dot(camera.Position, camera.Front);
+		if(p.cameraDistance > 0.0f)
+			ParticlesCount++;
+	}
+
+	// Order the particles
+	SortParticles();
+
+	//Affect them to the buffer
+	for(int i = 0; i < ParticlesCount; i++)
+	{
+		FireflyParticle& p = ParticlesContainer[i];
+
 		// Calculate position and fill GPU budder
-		particlesPosition[3 * i + 0] = pNewPos.x;
-		particlesPosition[3 * i + 1] = pNewPos.y;
-		particlesPosition[3 * i + 2] = pNewPos.z;
+		particlesPosition[3 * i + 0] = p.position.x;
+		particlesPosition[3 * i + 1] = p.position.y;
+		particlesPosition[3 * i + 2] = p.position.z;
 
 		particlesColor[3 * i + 0] = p.color.r;
 		particlesColor[3 * i + 1] = p.color.g;
@@ -672,12 +684,7 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		particlesScale[3 * i + 0] = p.scale;
 		particlesScale[3 * i + 1] = p.glowScale;
 		particlesScale[3 * i + 2] = p.glowSpeed;
-
-		ParticlesCount++;
 	}
-
-	// Order the particles
-	SortParticles();
 
 	return ParticlesCount;
 }
