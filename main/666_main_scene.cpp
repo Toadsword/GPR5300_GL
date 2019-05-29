@@ -195,7 +195,7 @@ void TerrainDrawingProgram::Draw()
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 model = glm::mat4(1.0f);
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 1000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 100.0f);
 
 	shaderProgram.Bind();
 	shaderProgram.SetVec3("lightPos", lightPos);
@@ -281,23 +281,25 @@ void TreeDrawingProgram::Draw()
 	auto& camera = engine->GetCamera();
 
 	glEnable(GL_DEPTH_TEST);
-	//glFrontFace(GL_CW);
+	glFrontFace(GL_CCW);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
 	modelShaderProgram.Bind();
 	modelShaderProgram.SetMat4("view", view);
 	modelShaderProgram.SetMat4("projection", projection);
 
 	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
+	model = glm::translate(model, glm::vec3(0.0f, -1.75f, -10.0f)); // translate it down so it's at the center of the scene
 	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
 
 	modelShaderProgram.SetMat4("model", model);
 
 	this->model.Draw(modelShaderProgram);
 
+	glBindVertexArray(0);
+	
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 }
@@ -320,7 +322,7 @@ struct FireflyParticle {
 	}
 };
 
-const int MaxParticles = 1000;
+const int MaxParticles = 80;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -339,7 +341,7 @@ private:
 	Shader blurShader;
 	Shader hdrShader;
 
-	//Consts (Editable by Imgui)
+	//Consts (Editable with Imgui)
 	int NumFireflies = MaxParticles;
 	GLfloat botRightLimit[3] = { -10.0f, -10.0f, -10.0f };
 	int range[3] = { 20, 20, 20 };
@@ -519,20 +521,20 @@ void FireflyDrawingProgram::Init()
 	//bind particle Color
 	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, particlesColorBuffer);
-	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(GLfloat), particlesColor, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(GLfloat), particlesColor, GL_STREAM_DRAW);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0); // Size of Color
 
 	//bind particle Scale
 	glEnableVertexAttribArray(3);
 	glBindBuffer(GL_ARRAY_BUFFER, particlesScaleBuffer);
-	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(GLfloat), particlesScale, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(GLfloat), particlesScale, GL_STREAM_DRAW);
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0); // Size of Scale
 
 	//bind particle position data
 	glEnableVertexAttribArray(4);
 	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
 	// Initialize with empty (NULL) buffer : it will be updated later, each frame.
-	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, MaxParticles * 3 * sizeof(float), NULL, GL_STREAM_DRAW);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); // Size of Position
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -580,8 +582,8 @@ void FireflyDrawingProgram::Draw()
 	const int ParticlesCount = ProcessParticles(dt);
 
 	// Pass billboard reuqired informations to the shader
-	fireflyShaderProgram.SetVec3("CameraRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-	fireflyShaderProgram.SetVec3("CameraUp", viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+	fireflyShaderProgram.SetVec3("CameraRight", camera.Right);
+	fireflyShaderProgram.SetVec3("CameraUp", camera.Up);
 	fireflyShaderProgram.SetMat4("VP", projection * viewMatrix);
 	fireflyShaderProgram.SetFloat("time", engine->GetTimeSinceInit());
 
@@ -716,8 +718,7 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		float t = 1 - p.timeSinceBegin / p.timeToEnd;
 		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
 
-
-		p.position = (p.startPos + p.diffPos * change);
+		p.position = (p.startPos + p.diffPos * change) - camera.Position * 4.0f;
 		// Culling of the particles (if behind of the camera, then we don't render them.
 		p.cameraDistance = glm::dot(p.position, camera.Front) - glm::dot(camera.Position, camera.Front);
 		if(p.cameraDistance > 0.0f)
@@ -877,7 +878,7 @@ void SkyboxDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 
-	const glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom),(float)config.screenWidth / (float)config.screenHeight,0.1f,100.0f);
+	const glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)config.screenWidth / (float)config.screenHeight,0.1f,100.0f);
 
 	glDepthFunc(GL_LEQUAL);
 	const glm::mat4 skyboxView = glm::mat4(glm::mat3(camera.GetViewMatrix()));
