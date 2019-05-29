@@ -23,7 +23,7 @@ public:
 	{
 		loadModel(path, generateSphere);
 	}
-	void Draw(Shader& shader);
+	void Draw(Shader& shader, unsigned numInstances = 0);
 private:
 
 	/*  Functions   */

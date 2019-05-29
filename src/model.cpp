@@ -3,10 +3,10 @@
 #include "file_utility.h"
 #include <glm/glm.hpp>
 
-void Model::Draw(Shader& shader)
+void Model::Draw(Shader& shader, unsigned numInstances)
 {
 	for (auto& mesh : meshes)
-		mesh.Draw(shader);
+		mesh.Draw(shader, numInstances);
 }
 
 void Model::loadModel(std::string path, bool generateSphere)

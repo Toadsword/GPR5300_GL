@@ -9,7 +9,6 @@
 #include <imgui.h>
 #include <Remotery.h>
 
-
 #define Camera
 #ifdef  Camera
 class CameraProgram : public DrawingProgram
@@ -195,7 +194,7 @@ void TerrainDrawingProgram::Draw()
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 model = glm::mat4(1.0f);
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 10000.0f);
 
 	shaderProgram.Bind();
 	shaderProgram.SetVec3("lightPos", lightPos);
@@ -250,6 +249,8 @@ void TerrainDrawingProgram::UpdateUi()
 
 #define Trees
 #ifdef Trees
+const int numTrees = 50;
+
 class TreeDrawingProgram : public DrawingProgram
 {
 public:
@@ -258,8 +259,65 @@ public:
 	void Destroy() override;
 
 private:
+
 	Shader modelShaderProgram;
-	Model model;
+	Model treeModel;
+
+	GLfloat treePosition[3 * numTrees] = {
+		0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f,
+		2.0f, 2.0f, 2.0f,
+		3.0f, 3.0f, 3.0f,
+		4.0f, 4.0f, 4.0f,
+		5.0f, 5.0f, 5.0f,
+		6.0f, 6.0f, 6.0f,
+		7.0f, 7.0f, 7.0f,
+		8.0f, 8.0f, 8.0f,
+		9.0f, 9.0f, 9.0f,
+		10.0f, 10.0f, 10.0f,
+		11.0f, 11.0f, 11.0f,
+		12.0f, 12.0f, 12.0f,
+		13.0f, 13.0f, 13.0f,
+		14.0f, 14.0f, 14.0f,
+		15.0f, 15.0f, 15.0f,
+		16.0f, 16.0f, 16.0f,
+		17.0f, 17.0f, 17.0f,
+		18.0f, 18.0f, 18.0f,
+		19.0f, 19.0f, 19.0f,		
+		20.0f, 20.0f, 20.0f,
+		21.0f, 21.0f, 21.0f,
+		22.0f, 22.0f, 22.0f,
+		23.0f, 23.0f, 23.0f,
+		24.0f, 24.0f, 24.0f,
+		25.0f, 25.0f, 25.0f,
+		26.0f, 26.0f, 26.0f,
+		27.0f, 27.0f, 27.0f,
+		28.0f, 28.0f, 28.0f,
+		29.0f, 29.0f, 29.0f,		
+		30.0f, 30.0f, 30.0f,
+		31.0f, 31.0f, 31.0f,
+		32.0f, 32.0f, 32.0f,
+		33.0f, 33.0f, 33.0f,
+		34.0f, 34.0f, 34.0f,
+		35.0f, 35.0f, 35.0f,
+		36.0f, 36.0f, 36.0f,
+		37.0f, 37.0f, 37.0f,
+		38.0f, 38.0f, 38.0f,
+		39.0f, 39.0f, 39.0f,		
+		40.0f, 40.0f, 40.0f,
+		41.0f, 41.0f, 41.0f,
+		42.0f, 42.0f, 42.0f,
+		43.0f, 43.0f, 43.0f,
+		44.0f, 44.0f, 44.0f,
+		45.0f, 45.0f, 45.0f,
+		46.0f, 46.0f, 46.0f,
+		47.0f, 47.0f, 47.0f,
+		48.0f, 48.0f, 48.0f,
+		49.0f, 49.0f, 49.0f
+	};
+
+	GLuint treePositionBuffer;
+	glm::mat4* modelMatrices;
 };
 
 void TreeDrawingProgram::Init()
@@ -267,11 +325,49 @@ void TreeDrawingProgram::Init()
 	programName = "Tree";
 
 	modelShaderProgram.CompileSource(
-		"shaders/666_main_scene/model.vert",
-		"shaders/666_main_scene/model.frag");
+		"shaders/666_main_scene/model_instancing.vert",
+		"shaders/666_main_scene/model_instancing.frag");
 	shaders.push_back(&modelShaderProgram);
 
-	model.Init("data/models/nanosuit2/nanosuit.blend");
+	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
+	
+	modelMatrices = new glm::mat4[numTrees];
+	for (unsigned int i = 0; i < numTrees; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0], treePosition[3 * i + 1], treePosition[3 * i + 2]));
+
+		modelMatrices[i] = model;
+	}
+
+	// configure instanced array
+	// -------------------------
+	glGenBuffers(1, &treePositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, treePositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numTrees * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	for (unsigned int i = 0; i < treeModel.meshes.size(); i++)
+	{
+		unsigned int VAO = treeModel.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(8);
+		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+		glVertexAttribDivisor(7, 1);
+		glVertexAttribDivisor(8, 1);
+
+		glBindVertexArray(0);
+	}
 }
 
 void TreeDrawingProgram::Draw()
@@ -279,26 +375,20 @@ void TreeDrawingProgram::Draw()
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
-
+	
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
+	
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
 	glm::mat4 view = camera.GetViewMatrix();
+
 	modelShaderProgram.Bind();
-	modelShaderProgram.SetMat4("view", view);
-	modelShaderProgram.SetMat4("projection", projection);
+	modelShaderProgram.SetMat4("VP", projection * view);
 
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.75f, -10.0f)); // translate it down so it's at the center of the scene
-	model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));	// it's a bit too big for our scene, so scale it down
-
-	modelShaderProgram.SetMat4("model", model);
-
-	this->model.Draw(modelShaderProgram);
-
-	glBindVertexArray(0);
+	// Draw the trees
+	this->treeModel.Draw(modelShaderProgram, numTrees);
 	
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
@@ -322,7 +412,7 @@ struct FireflyParticle {
 	}
 };
 
-const int MaxParticles = 80;
+const int MaxParticles = 8000;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -344,7 +434,7 @@ private:
 	//Consts (Editable with Imgui)
 	int NumFireflies = MaxParticles;
 	GLfloat botRightLimit[3] = { -10.0f, -10.0f, -10.0f };
-	int range[3] = { 20, 20, 20 };
+	int range[3] = { 200, 200, 200 };
 
 	Plane hdrPlane;
 	GLuint hdrFBO = 0;
@@ -406,9 +496,9 @@ void FireflyDrawingProgram::Init()
 	//Init particles
 	for (int i = 0; i < NumFireflies; i++) {
 		ParticlesContainer[i].destPos = glm::vec3(
-			rand() % 20 + botRightLimit[0],
-			rand() % 20 + botRightLimit[1],
-			rand() % 20 + botRightLimit[2]
+			rand() % range[0] + botRightLimit[0],
+			rand() % range[1] + botRightLimit[1],
+			rand() % range[2] + botRightLimit[2]
 		);
 
 		ParticlesContainer[i].timeSinceBegin = -1.0f;
@@ -496,9 +586,9 @@ void FireflyDrawingProgram::Init()
 
 	glGenBuffers(2, &VBO[0]);
 	glGenBuffers(1, &EBO);
+	glGenBuffers(1, &particlesPositionBuffer);
 	glGenBuffers(1, &particlesColorBuffer);
 	glGenBuffers(1, &particlesScaleBuffer);
-	glGenBuffers(1, &particlesPositionBuffer);
 
 	glGenVertexArrays(1, &VAO); //like: new VAO()
 	// 1. bind Vertex Array Object
@@ -556,7 +646,7 @@ void FireflyDrawingProgram::Draw()
 
 	//Get matrices
 	glm::mat4 viewMatrix = camera.GetViewMatrix();
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 100.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
 
 
 	//Bind frame buffer
@@ -718,7 +808,7 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		float t = 1 - p.timeSinceBegin / p.timeToEnd;
 		float change = pow(t, 2) / (2.0f * (pow(t, 2) - t) + 1.0f);
 
-		p.position = (p.startPos + p.diffPos * change) - camera.Position * 4.0f;
+		p.position = (p.startPos + p.diffPos * change) - camera.Position * 5.0f;
 		// Culling of the particles (if behind of the camera, then we don't render them.
 		p.cameraDistance = glm::dot(p.position, camera.Front) - glm::dot(camera.Position, camera.Front);
 		if(p.cameraDistance > 0.0f)
@@ -878,7 +968,7 @@ void SkyboxDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 
-	const glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)config.screenWidth / (float)config.screenHeight,0.1f,100.0f);
+	const glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)config.screenWidth / (float)config.screenHeight,0.1f,10000.0f);
 
 	glDepthFunc(GL_LEQUAL);
 	const glm::mat4 skyboxView = glm::mat4(glm::mat3(camera.GetViewMatrix()));

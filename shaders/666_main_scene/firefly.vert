@@ -17,7 +17,10 @@ uniform float time;
 void main()
 {
 	float scale = scaleGlow.x + sin(time * scaleGlow.z) * scaleGlow.y;
-	vec3 calculated = offset + CameraRight * aPos.x * scale + CameraUp * aPos.y * scale;
+	vec3 calculated = 
+		offset + 
+		CameraRight * aPos.x * scale + 
+		CameraUp * aPos.y * scale;
 
     gl_Position = VP * vec4(calculated, 1.0);
 

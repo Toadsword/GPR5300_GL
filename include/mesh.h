@@ -36,7 +36,7 @@ public:
 	std::vector<Texture> textures;
 	/*  Functions  */
 	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
-	void Draw(Shader shader);
+	void Draw(Shader shader, unsigned numInstances = 0);
 	unsigned GetVAO() { return VAO; };
 private:
 	/*  Render data  */
