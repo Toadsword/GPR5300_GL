@@ -247,11 +247,13 @@ void TerrainDrawingProgram::UpdateUi()
 }
 #endif
 
-#define Trees
-#ifdef Trees
+#define Models
+#ifdef Models
 const int numTrees = 50;
+const int numBushes = 20;
+const int numFlowers = 150;
 
-class TreeDrawingProgram : public DrawingProgram
+class ModelDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
@@ -260,8 +262,14 @@ public:
 
 private:
 
-	Shader modelShaderProgram;
+	Shader treeShaderProgram;
 	Model treeModel;
+
+	Shader bushShaderProgram;
+	Model bushModel;
+
+	Shader flowerShaderProgram;
+	Model flowerModel;
 
 	GLfloat treePosition[3 * numTrees] = {
 		0.0f, 0.0f, 0.0f,
@@ -316,21 +324,216 @@ private:
 		49.0f, 49.0f, 49.0f
 	};
 
+	GLfloat bushPosition[3 * numBushes] = {
+		0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f,
+		2.0f, 2.0f, 2.0f,
+		3.0f, 3.0f, 3.0f,
+		4.0f, 4.0f, 4.0f,
+		5.0f, 5.0f, 5.0f,
+		6.0f, 6.0f, 6.0f,
+		7.0f, 7.0f, 7.0f,
+		8.0f, 8.0f, 8.0f,
+		9.0f, 9.0f, 9.0f,
+		10.0f, 10.0f, 10.0f,
+		11.0f, 11.0f, 11.0f,
+		12.0f, 12.0f, 12.0f,
+		13.0f, 13.0f, 13.0f,
+		14.0f, 14.0f, 14.0f,
+		15.0f, 15.0f, 15.0f,
+		16.0f, 16.0f, 16.0f,
+		17.0f, 17.0f, 17.0f,
+		18.0f, 18.0f, 18.0f,
+		19.0f, 19.0f, 19.0f
+	};
+
+	GLfloat flowerPosition[3 * numFlowers] = {
+		0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f,
+		2.0f, 2.0f, 2.0f,
+		3.0f, 3.0f, 3.0f,
+		4.0f, 4.0f, 4.0f,
+		5.0f, 5.0f, 5.0f,
+		6.0f, 6.0f, 6.0f,
+		7.0f, 7.0f, 7.0f,
+		8.0f, 8.0f, 8.0f,
+		9.0f, 9.0f, 9.0f,
+		10.0f, 10.0f, 10.0f,
+		11.0f, 11.0f, 11.0f,
+		12.0f, 12.0f, 12.0f,
+		13.0f, 13.0f, 13.0f,
+		14.0f, 14.0f, 14.0f,
+		15.0f, 15.0f, 15.0f,
+		16.0f, 16.0f, 16.0f,
+		17.0f, 17.0f, 17.0f,
+		18.0f, 18.0f, 18.0f,
+		19.0f, 19.0f, 19.0f,
+		20.0f, 20.0f, 20.0f,
+		21.0f, 21.0f, 21.0f,
+		22.0f, 22.0f, 22.0f,
+		23.0f, 23.0f, 23.0f,
+		24.0f, 24.0f, 24.0f,
+		25.0f, 25.0f, 25.0f,
+		26.0f, 26.0f, 26.0f,
+		27.0f, 27.0f, 27.0f,
+		28.0f, 28.0f, 28.0f,
+		29.0f, 29.0f, 29.0f,
+		30.0f, 30.0f, 30.0f,
+		31.0f, 31.0f, 31.0f,
+		32.0f, 32.0f, 32.0f,
+		33.0f, 33.0f, 33.0f,
+		34.0f, 34.0f, 34.0f,
+		35.0f, 35.0f, 35.0f,
+		36.0f, 36.0f, 36.0f,
+		37.0f, 37.0f, 37.0f,
+		38.0f, 38.0f, 38.0f,
+		39.0f, 39.0f, 39.0f,
+		40.0f, 40.0f, 40.0f,
+		41.0f, 41.0f, 41.0f,
+		42.0f, 42.0f, 42.0f,
+		43.0f, 43.0f, 43.0f,
+		44.0f, 44.0f, 44.0f,
+		45.0f, 45.0f, 45.0f,
+		46.0f, 46.0f, 46.0f,
+		47.0f, 47.0f, 47.0f,
+		48.0f, 48.0f, 48.0f,
+		49.0f, 49.0f, 49.0f,
+		50.0f, 0.0f, 50.0f,
+		51.0f, 1.0f, 51.0f,
+		52.0f, 2.0f, 52.0f,
+		53.0f, 3.0f, 53.0f,
+		54.0f, 4.0f, 54.0f,
+		55.0f, 5.0f, 55.0f,
+		56.0f, 6.0f, 56.0f,
+		57.0f, 7.0f, 57.0f,
+		58.0f, 8.0f, 58.0f,
+		59.0f, 9.0f, 59.0f,
+		60.0f, 0.0f, 60.0f,
+		61.0f, 1.0f, 61.0f,
+		62.0f, 2.0f, 62.0f,
+		63.0f, 3.0f, 63.0f,
+		64.0f, 4.0f, 64.0f,
+		65.0f, 5.0f, 65.0f,
+		66.0f, 6.0f, 66.0f,
+		67.0f, 7.0f, 67.0f,
+		68.0f, 8.0f, 68.0f,
+		69.0f, 9.0f, 69.0f,
+		70.0f, 0.0f, 70.0f,
+		71.0f, 1.0f, 71.0f,
+		72.0f, 2.0f, 72.0f,
+		73.0f, 3.0f, 73.0f,
+		74.0f, 4.0f, 74.0f,
+		75.0f, 5.0f, 75.0f,
+		76.0f, 6.0f, 76.0f,
+		77.0f, 7.0f, 77.0f,
+		78.0f, 8.0f, 78.0f,
+		79.0f, 9.0f, 79.0f,
+		80.0f, 0.0f, 80.0f,
+		81.0f, 1.0f, 81.0f,
+		82.0f, 2.0f, 82.0f,
+		83.0f, 3.0f, 83.0f,
+		84.0f, 4.0f, 84.0f,
+		85.0f, 5.0f, 85.0f,
+		86.0f, 6.0f, 86.0f,
+		87.0f, 7.0f, 87.0f,
+		88.0f, 8.0f, 88.0f,
+		89.0f, 9.0f, 89.0f,
+		90.0f, 0.0f, 90.0f,
+		91.0f, 1.0f, 91.0f,
+		92.0f, 2.0f, 92.0f,
+		93.0f, 3.0f, 93.0f,
+		94.0f, 4.0f, 94.0f,
+		95.0f, 5.0f, 95.0f,
+		96.0f, 6.0f, 96.0f,
+		97.0f, 7.0f, 97.0f,
+		98.0f, 8.0f, 98.0f,
+		99.0f, 9.0f, 99.0f,
+		100.0f, 0.0f, 0.0f,
+		101.0f, 1.0f, 101.0f,
+		102.0f, 2.0f, 102.0f,
+		103.0f, 3.0f, 103.0f,
+		104.0f, 4.0f, 104.0f,
+		105.0f, 5.0f, 105.0f,
+		106.0f, 6.0f, 106.0f,
+		107.0f, 7.0f, 107.0f,
+		108.0f, 8.0f, 108.0f,
+		109.0f, 9.0f, 109.0f,
+		110.0f, 10.0f, 110.0f,
+		111.0f, 11.0f, 111.0f,
+		112.0f, 12.0f, 112.0f,
+		113.0f, 13.0f, 113.0f,
+		114.0f, 14.0f, 114.0f,
+		115.0f, 15.0f, 115.0f,
+		116.0f, 16.0f, 116.0f,
+		117.0f, 17.0f, 117.0f,
+		118.0f, 18.0f, 118.0f,
+		119.0f, 19.0f, 119.0f,
+		120.0f, 20.0f, 120.0f,
+		121.0f, 21.0f, 121.0f,
+		122.0f, 22.0f, 122.0f,
+		123.0f, 23.0f, 123.0f,
+		124.0f, 24.0f, 124.0f,
+		125.0f, 25.0f, 125.0f,
+		126.0f, 26.0f, 126.0f,
+		127.0f, 27.0f, 127.0f,
+		128.0f, 28.0f, 128.0f,
+		129.0f, 29.0f, 129.0f,
+		130.0f, 30.0f, 130.0f,
+		131.0f, 31.0f, 131.0f,
+		132.0f, 32.0f, 132.0f,
+		133.0f, 33.0f, 133.0f,
+		134.0f, 34.0f, 134.0f,
+		135.0f, 35.0f, 135.0f,
+		136.0f, 36.0f, 136.0f,
+		137.0f, 37.0f, 137.0f,
+		138.0f, 38.0f, 138.0f,
+		139.0f, 39.0f, 139.0f,
+		140.0f, 40.0f, 140.0f,
+		141.0f, 41.0f, 141.0f,
+		142.0f, 42.0f, 142.0f,
+		143.0f, 43.0f, 143.0f,
+		144.0f, 44.0f, 144.0f,
+		145.0f, 45.0f, 145.0f,
+		146.0f, 46.0f, 146.0f,
+		147.0f, 47.0f, 147.0f,
+		148.0f, 48.0f, 148.0f,
+		149.0f, 49.0f, 149.0f
+	};
+
+
 	GLuint treePositionBuffer;
+	GLuint bushPositionBuffer;
+	GLuint flowerPositionBuffer;
+
 	glm::mat4* modelMatrices;
 };
 
-void TreeDrawingProgram::Init()
+void ModelDrawingProgram::Init()
 {
-	programName = "Tree";
+	programName = "Models";
 
-	modelShaderProgram.CompileSource(
+	treeShaderProgram.CompileSource(
 		"shaders/666_main_scene/model_instancing.vert",
 		"shaders/666_main_scene/model_instancing.frag");
-	shaders.push_back(&modelShaderProgram);
+	shaders.push_back(&treeShaderProgram);
+
+	bushShaderProgram.CompileSource(
+		"shaders/666_main_scene/model_instancing.vert",
+		"shaders/666_main_scene/model_instancing.frag");
+	shaders.push_back(&bushShaderProgram);
+
+	flowerShaderProgram.CompileSource(
+		"shaders/666_main_scene/model_instancing.vert",
+		"shaders/666_main_scene/model_instancing.frag");
+	shaders.push_back(&flowerShaderProgram);
 
 	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
-	
+	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
+	flowerModel.Init("data/models/voxel_flower/Flower.obj", true);
+
+	/******************************************************************************/
+	/***								Loading trees							***/
+	/******************************************************************************/
 	modelMatrices = new glm::mat4[numTrees];
 	for (unsigned int i = 0; i < numTrees; i++)
 	{
@@ -368,9 +571,93 @@ void TreeDrawingProgram::Init()
 
 		glBindVertexArray(0);
 	}
+
+	/******************************************************************************/
+	/***								Loading bushes							***/
+	/******************************************************************************/
+	modelMatrices = new glm::mat4[numTrees];
+	for (unsigned int i = 0; i < numBushes; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::translate(model, glm::vec3(bushPosition[3 * i + 0], bushPosition[3 * i + 1], bushPosition[3 * i + 2]));
+
+		modelMatrices[i] = model;
+	}
+
+	// configure instanced array
+	// -------------------------
+	glGenBuffers(1, &bushPositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, bushPositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numBushes * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	for (unsigned int i = 0; i < bushModel.meshes.size(); i++)
+	{
+		unsigned int VAO = bushModel.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(8);
+		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+		glVertexAttribDivisor(7, 1);
+		glVertexAttribDivisor(8, 1);
+
+		glBindVertexArray(0);
+	}
+
+	/******************************************************************************/
+	/***								Loading flowers							***/
+	/******************************************************************************/
+	modelMatrices = new glm::mat4[numTrees];
+	for (unsigned int i = 0; i < numBushes; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::translate(model, glm::vec3(flowerPosition[3 * i + 0], flowerPosition[3 * i + 1], flowerPosition[3 * i + 2]));
+
+		modelMatrices[i] = model;
+	}
+
+	// configure instanced array
+	// -------------------------
+	glGenBuffers(1, &flowerPositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, flowerPositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numFlowers* sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	for (unsigned int i = 0; i < flowerModel.meshes.size(); i++)
+	{
+		unsigned int VAO = flowerModel.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(8);
+		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+		glVertexAttribDivisor(7, 1);
+		glVertexAttribDivisor(8, 1);
+
+		glBindVertexArray(0);
+	}
+
+	
 }
 
-void TreeDrawingProgram::Draw()
+void ModelDrawingProgram::Draw()
 {
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
@@ -383,21 +670,41 @@ void TreeDrawingProgram::Draw()
 	
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
 	glm::mat4 view = camera.GetViewMatrix();
-
-	modelShaderProgram.Bind();
-	modelShaderProgram.SetMat4("VP", projection * view);
+	glm::mat4 VP = projection * view;
 
 	// Draw the trees
-	this->treeModel.Draw(modelShaderProgram, numTrees);
-	
+	treeShaderProgram.Bind();
+	treeShaderProgram.SetMat4("VP", VP);
+	this->treeModel.Draw(treeShaderProgram, numTrees);
+
+	// Draw the bushes
+	bushShaderProgram.Bind();
+	bushShaderProgram.SetMat4("VP", VP);
+	this->bushModel.Draw(bushShaderProgram, numBushes);
+
+	// Draw the flowers
+	flowerShaderProgram.Bind();
+	flowerShaderProgram.SetMat4("VP", VP);
+	this->flowerModel.Draw(flowerShaderProgram, numFlowers);
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 }
 
-void TreeDrawingProgram::Destroy()
+void ModelDrawingProgram::Destroy()
 {
+	//Delete buffers
+	glDeleteBuffers(1, &treePositionBuffer);
+	glDeleteBuffers(1, &bushPositionBuffer);
+	glDeleteBuffers(1, &flowerPositionBuffer);
+
+	//TODO : Implement the destroy of models
+	//treeModel.Destroy();
+	//bushModel.Destroy();
+	//flowerModel.Destroy();
 }
 #endif
+
+
 
 #define Firefly
 #ifdef Firefly
