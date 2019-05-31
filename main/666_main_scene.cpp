@@ -188,6 +188,7 @@ void TerrainDrawingProgram::Draw()
 	rmt_BeginOpenGLSample(HelloTerrainDraw);
 
 	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
 	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -223,7 +224,6 @@ void TerrainDrawingProgram::Draw()
 	glBindVertexArray(0);
 
 	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
 	rmt_EndOpenGLSample();
 }
 
@@ -575,7 +575,7 @@ void ModelDrawingProgram::Init()
 	/******************************************************************************/
 	/***								Loading bushes							***/
 	/******************************************************************************/
-	modelMatrices = new glm::mat4[numTrees];
+	modelMatrices = new glm::mat4[numBushes];
 	for (unsigned int i = 0; i < numBushes; i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
@@ -616,8 +616,8 @@ void ModelDrawingProgram::Init()
 	/******************************************************************************/
 	/***								Loading flowers							***/
 	/******************************************************************************/
-	modelMatrices = new glm::mat4[numTrees];
-	for (unsigned int i = 0; i < numBushes; i++)
+	modelMatrices = new glm::mat4[numFlowers];
+	for (unsigned int i = 0; i < numFlowers; i++)
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
@@ -653,17 +653,15 @@ void ModelDrawingProgram::Init()
 
 		glBindVertexArray(0);
 	}
-
-	
 }
 
 void ModelDrawingProgram::Draw()
 {
+	rmt_BeginOpenGLSample(ModelDraw);
 	Engine* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 	
-	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
@@ -672,22 +670,29 @@ void ModelDrawingProgram::Draw()
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 VP = projection * view;
 
+	rmt_BeginOpenGLSample(TreeDraw);
 	// Draw the trees
 	treeShaderProgram.Bind();
 	treeShaderProgram.SetMat4("VP", VP);
 	this->treeModel.Draw(treeShaderProgram, numTrees);
+	rmt_EndOpenGLSample(TreeDraw);
 
+	rmt_BeginOpenGLSample(BushDraw);
 	// Draw the bushes
 	bushShaderProgram.Bind();
 	bushShaderProgram.SetMat4("VP", VP);
 	this->bushModel.Draw(bushShaderProgram, numBushes);
+	rmt_EndOpenGLSample(BushDraw);
 
+	rmt_BeginOpenGLSample(FlowerDraw);
 	// Draw the flowers
 	flowerShaderProgram.Bind();
 	flowerShaderProgram.SetMat4("VP", VP);
 	this->flowerModel.Draw(flowerShaderProgram, numFlowers);
+	rmt_EndOpenGLSample(FlowerDraw);
+
 	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
+	rmt_EndOpenGLSample();
 }
 
 void ModelDrawingProgram::Destroy()
@@ -703,8 +708,6 @@ void ModelDrawingProgram::Destroy()
 	//flowerModel.Destroy();
 }
 #endif
-
-
 
 #define Firefly
 #ifdef Firefly
@@ -747,6 +750,7 @@ private:
 	GLuint hdrFBO = 0;
 	GLuint rboDepth = 0;
 	GLuint hdrColorBuffer[2];
+	GLuint hdrDepthBuffer = 0;
 
 	GLuint pingpongFBO[2];
 	GLuint pingpongBuffer[2];
@@ -843,6 +847,7 @@ void FireflyDrawingProgram::Init()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 	glGenTextures(2, hdrColorBuffer);
+	glGenTextures(1, &hdrDepthBuffer);
 	for (unsigned int i = 0; i < 2; i++)
 	{
 		glBindTexture(GL_TEXTURE_2D, hdrColorBuffer[i]);
@@ -854,6 +859,7 @@ void FireflyDrawingProgram::Init()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i,
 			GL_TEXTURE_2D, hdrColorBuffer[i], 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, hdrDepthBuffer, 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -954,26 +960,24 @@ void FireflyDrawingProgram::Draw()
 	//Get matrices
 	glm::mat4 viewMatrix = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
-
+	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//Bind frame buffer
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
 	//Clear color OF THE BUFFER
 	glClearColor(1, 1, 1, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glEnable(GL_DEPTH_TEST);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	// Use our shader
 	fireflyShaderProgram.Bind();
 
 	//bind texture
+	glBindVertexArray(VAO);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, fireflyTexture);
-	glBindVertexArray(VAO);
 
 	//Process particles
 	const int ParticlesCount = ProcessParticles(dt);
@@ -997,10 +1001,13 @@ void FireflyDrawingProgram::Draw()
 	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesScale);
 
 	// Draw the particles
+	//glDepthFunc(GL_ALWAYS);
 	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticlesCount);
-
+	glDepthMask(GL_FALSE);
+	//glDisable(GL_DEPTH_TEST);
 	//glDepthMask(GL_FALSE); // Don't write to depth buffer
 
+	//glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticlesCount);
 	// Post processing pass
 	bool horizontal = true, first_iteration = true;
 	int amount = 10;
@@ -1031,9 +1038,11 @@ void FireflyDrawingProgram::Draw()
 	hdrShader.SetInt("hdrBuffer", 0);
 	hdrShader.SetInt("bloomBlur", 1);
 	hdrShader.SetFloat("exposure", exposure);
+	
 	hdrPlane.Draw();
 
 	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(0);
 }
 
@@ -1277,6 +1286,8 @@ void SkyboxDrawingProgram::Draw()
 
 	const glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)config.screenWidth / (float)config.screenHeight,0.1f,10000.0f);
 
+	glDepthMask(GL_TRUE);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	glDepthFunc(GL_LEQUAL);
 	const glm::mat4 skyboxView = glm::mat4(glm::mat3(camera.GetViewMatrix()));
 	cubemapShader.Bind();
@@ -1292,7 +1303,8 @@ void SkyboxDrawingProgram::Draw()
 
 void SkyboxDrawingProgram::Destroy()
 {
-	
+	glDeleteVertexArrays(1, &cubeMapVAO);
+	glDeleteBuffers(1, &cubeMapVBO);
 }
 #endif
 
@@ -1318,8 +1330,8 @@ int main(int argc, char** argv)
 	engine.AddDrawingProgram(new TerrainDrawingProgram());
 #endif
 
-#ifdef Trees
-	engine.AddDrawingProgram(new TreeDrawingProgram());
+#ifdef Models
+	engine.AddDrawingProgram(new ModelDrawingProgram());
 #endif
 
 #ifdef Firefly
