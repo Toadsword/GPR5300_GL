@@ -77,6 +77,7 @@ enum ModelTypes
 	BUSHES,
 	FLOWERS
 };
+const int numModelTypes = 3;
 
 const int numTrees = 50;
 const int numBushes = 20;
@@ -90,8 +91,8 @@ public:
 	void Destroy() override;
 	void UpdateUi() override;
 private:
-	void DrawShader(Shader& currentShader);
-	void InitModels(Shader& currentShader, ModelTypes modelType);
+	void InitModels();
+	void DrawShader(Shader& currentTerrainShader, Shader& currentModelsShader);
 
 	DirectionLight directionLight;
 
@@ -99,6 +100,7 @@ private:
 	//		TERRAIN CONFIGURATION		//
 	//////////////////////////////////////
 	Shader terrainShader;
+	Shader modelShader;
 
 	unsigned int terrainVAO = 0;
 	unsigned terrainVBO[2] = {};
@@ -125,7 +127,7 @@ private:
 	//////////////////////////////////////
 	//		Models CONFIGURATION		//
 	//////////////////////////////////////
-	Shader treeShaderProgram;
+	//Shader treeShaderProgram;
 	Model treeModel;
 	GLfloat treePosition[3 * numTrees] = {
 		0.0f, 0.0f, 0.0f,
@@ -181,7 +183,7 @@ private:
 	};
 	GLuint treePositionBuffer;
 
-	Shader bushShaderProgram;
+	//Shader bushShaderProgram;
 	Model bushModel;
 	GLfloat bushPosition[3 * numBushes] = {
 		0.0f, 0.0f, 0.0f,
@@ -207,7 +209,7 @@ private:
 	};
 	GLuint bushPositionBuffer;
 
-	Shader flowerShaderProgram;
+	//Shader flowerShaderProgram;
 	Model flowerModel;
 	GLfloat flowerPosition[3 * numFlowers] = {
 		0.0f, 0.0f, 0.0f,
@@ -370,6 +372,7 @@ private:
 	//		SHADOW CONFIGURATION		//
 	//////////////////////////////////////
 	Shader depthShader;
+	Shader depthInstancedShader;
 	Shader gammaShader;
 
 	Plane postProcessingPlane;
@@ -393,11 +396,13 @@ void ModelsDrawingProgram::Init()
 
 	auto* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
 
+	camera.Position = glm::vec3(0.0f, 2.0f, 10.0f);
+	
 	//////////////////////////////
 	//		Setup Terrain		//
 	//////////////////////////////
-
 	terrainVertices = (float*)calloc(3 * terrainVerticesCount, sizeof(float));//vec3, so 3 floats
 	terrainTexCoords = (float*)calloc(2 * terrainVerticesCount, sizeof(float));//vec2, so 2 floats
 	for (size_t i = 0l; i < terrainVerticesCount; i++)
@@ -468,15 +473,18 @@ void ModelsDrawingProgram::Init()
 
 	//////////////////////////////
 	//		Setup Models		//
-	//////////////////////////////
+	//////////////////////////////	
+	modelShader.CompileSource("shaders/666_main_scene/model_shadow.vert", "shaders/666_main_scene/model_shadow.frag");
+	shaders.push_back(&modelShader);
+
+	depthInstancedShader.CompileSource("shaders/engine/depth_instanced.vert", "shaders/engine/depth_instanced.frag");
+	shaders.push_back(&depthInstancedShader);
+
+	InitModels();
+	
 	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
-	InitModels(treeShaderProgram, TREE);
-
 	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
-	InitModels(bushShaderProgram, BUSHES);
-
 	flowerModel.Init("data/models/voxel_flower/Flower.obj", true);
-	InitModels(flowerShaderProgram, FLOWERS);
 
 	//////////////////////////////
 	//		Setup Shadow		//
@@ -532,13 +540,8 @@ void ModelsDrawingProgram::Init()
 	directionLight.intensity = 4.0f;
 }
 
-void ModelsDrawingProgram::InitModels(Shader& currentShader, ModelTypes modelType)
+void ModelsDrawingProgram::InitModels()
 {
-	currentShader.CompileSource(
-		"shaders/666_main_scene/model_instancing.vert",
-		"shaders/666_main_scene/model_instancing.frag");
-	shaders.push_back(&currentShader);
-
 	/******************************************************************************/
 	/***								Loading models							***/
 	/******************************************************************************/
@@ -547,64 +550,67 @@ void ModelsDrawingProgram::InitModels(Shader& currentShader, ModelTypes modelTyp
 	GLfloat* positions = 0;
 	GLuint positionBuffer = 0;
 	Model* model;
-	switch(modelType)
+	for(int i = 0; i < numModelTypes; i++)
 	{
-	case TREE:
-		numInstances = numTrees;
-		positions = treePosition;
-		positionBuffer = treePositionBuffer;
-		model = &treeModel;
-		break;
-	case BUSHES:
-		numInstances = numBushes;
-		positions = bushPosition;
-		positionBuffer = bushPositionBuffer;
-		model = &bushModel;
-		break;
-	case FLOWERS:
-		numInstances = numFlowers;
-		positions = flowerPosition;
-		positionBuffer = flowerPositionBuffer;
-		model = &flowerModel;
-		break;
-	}
+		switch((ModelTypes)i)
+		{
+		case TREE:
+			numInstances = numTrees;
+			positions = treePosition;
+			positionBuffer = treePositionBuffer;
+			model = &treeModel;
+			break;
+		case BUSHES:
+			numInstances = numBushes;
+			positions = bushPosition;
+			positionBuffer = bushPositionBuffer;
+			model = &bushModel;
+			break;
+		case FLOWERS:
+			numInstances = numFlowers;
+			positions = flowerPosition;
+			positionBuffer = flowerPositionBuffer;
+			model = &flowerModel;
+			break;
+		}
 
-	modelMatrices = new glm::mat4[numInstances];
-	for (unsigned int i = 0; i < numInstances; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		model = glm::translate(model, glm::vec3(positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]));
+		modelMatrices = new glm::mat4[numInstances];
+		for (unsigned int i = 0; i < numInstances; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+			model = glm::translate(model, glm::vec3(positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]));
 
-		modelMatrices[i] = model;
-	}
+			modelMatrices[i] = model;
+		}
 
-	// configure instanced array
-	// -------------------------
-	glGenBuffers(1, &positionBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-	glBufferData(GL_ARRAY_BUFFER, numInstances * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+		// configure instanced array
+		// -------------------------
+		glGenBuffers(1, &positionBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numInstances * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
 
-	for (unsigned int i = 0; i < model->meshes.size(); i++)
-	{
-		unsigned int VAO = model->meshes[i].GetVAO();
-		glBindVertexArray(VAO);
-		// set attribute pointers for matrix (4 times vec4)
-		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(8);
-		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+		for (unsigned int i = 0; i < model->meshes.size(); i++)
+		{
+			unsigned int VAO = model->meshes[i].GetVAO();
+			glBindVertexArray(VAO);
+			// set attribute pointers for matrix (4 times vec4)
+			glEnableVertexAttribArray(5);
+			glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+			glEnableVertexAttribArray(6);
+			glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+			glEnableVertexAttribArray(7);
+			glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+			glEnableVertexAttribArray(8);
+			glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
 
-		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
-		glVertexAttribDivisor(7, 1);
-		glVertexAttribDivisor(8, 1);
+			glVertexAttribDivisor(5, 1);
+			glVertexAttribDivisor(6, 1);
+			glVertexAttribDivisor(7, 1);
+			glVertexAttribDivisor(8, 1);
 
-		glBindVertexArray(0);
+			glBindVertexArray(0);
+		}
 	}
 }
 
@@ -617,9 +623,9 @@ void ModelsDrawingProgram::Draw()
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 
-	glFrontFace(GL_CW);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 	
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -632,16 +638,21 @@ void ModelsDrawingProgram::Draw()
 		directionLight.position + directionLight.direction,
 		glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+	
+	//Put informations in both the shaders
 	depthShader.Bind();
 	depthShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+	depthInstancedShader.Bind();
+	depthInstancedShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 	glCullFace(GL_FRONT);
-	DrawShader(depthShader);
+	DrawShader(depthShader, depthInstancedShader);
 	glCullFace(GL_BACK);	
 
 	glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, config.screenWidth, config.screenHeight);
+	//Put informations in both the shaders
 	terrainShader.Bind();
 	terrainShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 	terrainShader.SetBool("shadowBiasEnable", shadowBiasEnable);
@@ -649,7 +660,16 @@ void ModelsDrawingProgram::Draw()
 	terrainShader.SetInt("shadowMap", 3);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
-	DrawShader(terrainShader);
+
+	modelShader.Bind();
+	modelShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
+	modelShader.SetBool("shadowBiasEnable", shadowBiasEnable);
+	modelShader.SetBool("pcf", enablePcf);
+	modelShader.SetInt("shadowMap", 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+
+	DrawShader(terrainShader, modelShader);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	gammaShader.Bind();
@@ -659,9 +679,11 @@ void ModelsDrawingProgram::Draw()
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
 	postProcessingPlane.Draw();
+
+	glDisable(GL_CULL_FACE);
 }
 
-void ModelsDrawingProgram::DrawShader(Shader& currentShader)
+void ModelsDrawingProgram::DrawShader(Shader& terrainShader, Shader& modelShader)
 {
 	auto* engine = Engine::GetPtr();
 	auto& camera = engine->GetCamera();
@@ -670,74 +692,68 @@ void ModelsDrawingProgram::DrawShader(Shader& currentShader)
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(camera.Zoom,(float)config.screenWidth / config.screenHeight,0.1f, 10000.0f);
 	
-	rmt_BeginOpenGLSample(HelloTerrainDraw);
-	glm::mat4 model = glm::mat4(1.0f);
-
-	currentShader.Bind();
-	currentShader.SetBool("directionalLightEnable", true);
-	//currentShader.SetVec3("viewPos", camera.Position);
-	
-	directionLight.Bind(currentShader, 0);
-	currentShader.SetMat4("view", view);
-	currentShader.SetMat4("projection", projection);
-	currentShader.SetMat4("model", model);
-	currentShader.SetFloat("heightResolution", terrainElevationFactor);
-	currentShader.SetFloat("heightOrigin", terrainOriginY);
-
-	currentShader.SetInt("heightMap", 0);
-	currentShader.SetInt("diffuseMap", 1);
-	currentShader.SetInt("normalMap", 2);
-
-	currentShader.SetFloat("texTiling", 10.0f);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, terrainTexture);
-	currentShader.SetInt("material.texture_diffuse1", 1);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
-
-	glBindVertexArray(terrainVAO);
-	glDrawElements(GL_TRIANGLES, terrainFaceCount * 3, GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
-
-	glDisable(GL_CULL_FACE);
-	rmt_EndOpenGLSample();
-
-
 	rmt_BeginOpenGLSample(ModelDraw);
-
-	glFrontFace(GL_CCW);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
 
 	glm::mat4 VP = projection * view;
 
 	rmt_BeginOpenGLSample(TreeDraw);
 	// Draw the trees
-	treeShaderProgram.Bind();
-	treeShaderProgram.SetMat4("VP", VP);
-	this->treeModel.Draw(treeShaderProgram, numTrees);
+	modelShader.Bind();
+	modelShader.SetMat4("VP", VP);
+	modelShader.SetBool("directionalLightEnable", true);
+	this->treeModel.Draw(modelShader, numTrees);
 	rmt_EndOpenGLSample(TreeDraw);
 
 	rmt_BeginOpenGLSample(BushDraw);
 	// Draw the bushes
-	bushShaderProgram.Bind();
-	bushShaderProgram.SetMat4("VP", VP);
-	this->bushModel.Draw(bushShaderProgram, numBushes);
+	this->bushModel.Draw(modelShader, numBushes);
 	rmt_EndOpenGLSample(BushDraw);
 
 	rmt_BeginOpenGLSample(FlowerDraw);
+
 	// Draw the flowers
-	flowerShaderProgram.Bind();
-	flowerShaderProgram.SetMat4("VP", VP);
-	this->flowerModel.Draw(flowerShaderProgram, numFlowers);
+	this->flowerModel.Draw(modelShader, numFlowers);
 	rmt_EndOpenGLSample(FlowerDraw);
 
-	glDisable(GL_CULL_FACE);
-	rmt_EndOpenGLSample();
+	rmt_EndOpenGLSample(ModelDraw);
+
+	rmt_BeginOpenGLSample(TerrainDraw);
+
+	glm::mat4 model = glm::mat4(1.0f);
+
+	terrainShader.Bind();
+	terrainShader.SetBool("directionalLightEnable", true);
+	//currentShader.SetVec3("viewPos", camera.Position);
+
+	directionLight.Bind(terrainShader, 0);
+	terrainShader.SetMat4("VP", projection * view);
+	terrainShader.SetMat4("model", model);
+	terrainShader.SetFloat("heightResolution", terrainElevationFactor);
+	terrainShader.SetFloat("heightOrigin", terrainOriginY);
+
+	terrainShader.SetFloat("texTiling", 10.0f);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
+	terrainShader.SetInt("heightMap", 0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, terrainTexture);
+	terrainShader.SetInt("material.texture_diffuse1", 1);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
+	terrainShader.SetInt("material.texture_normal", 2);
+
+	glBindVertexArray(terrainVAO);
+
+	//Terrain vertices are clock wise, unlike the models. 
+	//So we change the culling method.
+	glFrontFace(GL_CW);
+	glDrawElements(GL_TRIANGLES, terrainFaceCount * 3, GL_UNSIGNED_INT, 0);
+	glFrontFace(GL_CCW);
+
+	glBindVertexArray(0);
+
+	rmt_EndOpenGLSample(TerrainDraw);
 }
 
 void ModelsDrawingProgram::Destroy()
@@ -775,7 +791,6 @@ void ModelsDrawingProgram::UpdateUi()
 	ImGui::Checkbox("Enable Gamma Correction", &enableGammaCorrection);
 }
 #endif
-
 
 #define Firefly
 #ifdef Firefly

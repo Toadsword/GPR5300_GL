@@ -9,8 +9,9 @@ out VS_OUT vs_out;
 uniform vec3 lightPos;
 
 uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 VP; // View Projection
+//uniform mat4 view;
+//uniform mat4 projection;
 
 uniform float heightResolution;
 uniform float heightOrigin;
@@ -26,7 +27,7 @@ void main()
 	vec4 modelPos = vec4(aPos, 1.0);
 	float height = texture(heightMap, aTexCoords).r * heightResolution + heightOrigin;
 	modelPos.y = height;
-	vec4 pos = projection * view * model * modelPos;
+	vec4 pos = VP * model * modelPos;
 
 	mat3 normalMatrix = transpose(inverse(mat3(model)));
     vec3 T = normalize(normalMatrix * aTangent);
