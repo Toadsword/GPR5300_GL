@@ -7,7 +7,6 @@ layout (location = 4) in vec3 aBitangent;
 out VS_OUT vs_out;
 
 uniform vec3 lightPos;
-uniform vec3 viewPos;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -17,6 +16,10 @@ uniform float heightResolution;
 uniform float heightOrigin;
 
 uniform sampler2D heightMap;
+
+uniform vec3 viewPos;
+uniform mat4 lightSpaceMatrix;
+uniform float texTiling = 0;
 
 void main()
 {
@@ -35,6 +38,7 @@ void main()
 
 	vs_out.ViewPos = viewPos;
 	vs_out.FragPos = vec3(pos);   
-    vs_out.TexCoords = aTexCoords;	
-	gl_Position = pos;
+    vs_out.TexCoords = aTexCoords * texTiling;	
+	vs_out.FragPosLightSpace = lightSpaceMatrix * vec4(vs_out.FragPos, 1.0);
+    gl_Position = pos;
 }

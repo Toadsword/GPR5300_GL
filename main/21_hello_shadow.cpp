@@ -73,8 +73,6 @@ void HelloShadowDrawingProgram::Init()
 	shaders.push_back(&depthShader);
 	shaders.push_back(&gammaShader);
 	
-
-
 	glGenFramebuffers(1, &depthMapFBO);
 	glGenTextures(1, &depthMap);
 	glBindTexture(GL_TEXTURE_2D, depthMap);
