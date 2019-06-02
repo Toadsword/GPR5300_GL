@@ -474,7 +474,7 @@ void ModelsDrawingProgram::Init()
 	//////////////////////////////
 	//		Setup Models		//
 	//////////////////////////////	
-	modelShader.CompileSource("shaders/666_main_scene/model_instanced.vert", "shaders/666_main_scene/model_instanced.frag");
+	modelShader.CompileSource("shaders/666_main_scene/model_shadow.vert", "shaders/666_main_scene/model_shadow.frag");
 	shaders.push_back(&modelShader);
 
 	depthInstancedShader.CompileSource("shaders/engine/depth_instanced.vert", "shaders/engine/depth_instanced.frag");
@@ -561,7 +561,7 @@ void ModelsDrawingProgram::InitModels()
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0], treePosition[3 * i + 1], treePosition[3 * i + 2]));
+		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0] * 10, treePosition[3 * i + 1] * 10, treePosition[3 * i + 2] * 10));
 
 		modelMatrices[i] = model;
 	}
