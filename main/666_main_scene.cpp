@@ -474,7 +474,7 @@ void ModelsDrawingProgram::Init()
 	//////////////////////////////
 	//		Setup Models		//
 	//////////////////////////////	
-	modelShader.CompileSource("shaders/666_main_scene/model_shadow.vert", "shaders/666_main_scene/model_shadow.frag");
+	modelShader.CompileSource("shaders/666_main_scene/model_instanced.vert", "shaders/666_main_scene/model_instanced.frag");
 	shaders.push_back(&modelShader);
 
 	depthInstancedShader.CompileSource("shaders/engine/depth_instanced.vert", "shaders/engine/depth_instanced.frag");
@@ -542,75 +542,138 @@ void ModelsDrawingProgram::Init()
 
 void ModelsDrawingProgram::InitModels()
 {
-	/******************************************************************************/
-	/***								Loading models							***/
-	/******************************************************************************/
+	programName = "Models";
 
-	int numInstances = 0;
-	GLfloat* positions = 0;
-	GLuint positionBuffer = 0;
-	Model* model;
-	for(int i = 0; i < numModelTypes; i++)
+	modelShader.CompileSource(
+		"shaders/666_main_scene/model_instancing.vert",
+		"shaders/666_main_scene/model_instancing.frag");
+	shaders.push_back(&modelShader);
+
+	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
+	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
+	flowerModel.Init("data/models/voxel_flower/Flower.obj", true);
+
+	/******************************************************************************/
+	/***								Loading trees							***/
+	/******************************************************************************/
+	modelMatrices = new glm::mat4[numTrees];
+	for (unsigned int i = 0; i < numTrees; i++)
 	{
-		switch((ModelTypes)i)
-		{
-		case TREE:
-			numInstances = numTrees;
-			positions = treePosition;
-			positionBuffer = treePositionBuffer;
-			model = &treeModel;
-			break;
-		case BUSHES:
-			numInstances = numBushes;
-			positions = bushPosition;
-			positionBuffer = bushPositionBuffer;
-			model = &bushModel;
-			break;
-		case FLOWERS:
-			numInstances = numFlowers;
-			positions = flowerPosition;
-			positionBuffer = flowerPositionBuffer;
-			model = &flowerModel;
-			break;
-		}
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0], treePosition[3 * i + 1], treePosition[3 * i + 2]));
 
-		modelMatrices = new glm::mat4[numInstances];
-		for (unsigned int i = 0; i < numInstances; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-			model = glm::translate(model, glm::vec3(positions[3 * i + 0], positions[3 * i + 1], positions[3 * i + 2]));
+		modelMatrices[i] = model;
+	}
 
-			modelMatrices[i] = model;
-		}
+	// configure instanced array
+	// -------------------------
+	glGenBuffers(1, &treePositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, treePositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numTrees * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
 
-		// configure instanced array
-		// -------------------------
-		glGenBuffers(1, &positionBuffer);
-		glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
-		glBufferData(GL_ARRAY_BUFFER, numInstances * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+	for (unsigned int i = 0; i < treeModel.meshes.size(); i++)
+	{
+		unsigned int VAO = treeModel.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(8);
+		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
 
-		for (unsigned int i = 0; i < model->meshes.size(); i++)
-		{
-			unsigned int VAO = model->meshes[i].GetVAO();
-			glBindVertexArray(VAO);
-			// set attribute pointers for matrix (4 times vec4)
-			glEnableVertexAttribArray(5);
-			glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-			glEnableVertexAttribArray(6);
-			glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-			glEnableVertexAttribArray(7);
-			glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-			glEnableVertexAttribArray(8);
-			glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+		glVertexAttribDivisor(7, 1);
+		glVertexAttribDivisor(8, 1);
 
-			glVertexAttribDivisor(5, 1);
-			glVertexAttribDivisor(6, 1);
-			glVertexAttribDivisor(7, 1);
-			glVertexAttribDivisor(8, 1);
+		glBindVertexArray(0);
+	}
 
-			glBindVertexArray(0);
-		}
+	/******************************************************************************/
+	/***								Loading bushes							***/
+	/******************************************************************************/
+	modelMatrices = new glm::mat4[numBushes];
+	for (unsigned int i = 0; i < numBushes; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::translate(model, glm::vec3(bushPosition[3 * i + 0], bushPosition[3 * i + 1], bushPosition[3 * i + 2]));
+
+		modelMatrices[i] = model;
+	}
+
+	// configure instanced array
+	// -------------------------
+	glGenBuffers(1, &bushPositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, bushPositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numBushes * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	for (unsigned int i = 0; i < bushModel.meshes.size(); i++)
+	{
+		unsigned int VAO = bushModel.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(8);
+		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+		glVertexAttribDivisor(7, 1);
+		glVertexAttribDivisor(8, 1);
+
+		glBindVertexArray(0);
+	}
+
+	/******************************************************************************/
+	/***								Loading flowers							***/
+	/******************************************************************************/
+	modelMatrices = new glm::mat4[numFlowers];
+	for (unsigned int i = 0; i < numFlowers; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+		model = glm::translate(model, glm::vec3(flowerPosition[3 * i + 0], flowerPosition[3 * i + 1], flowerPosition[3 * i + 2]));
+
+		modelMatrices[i] = model;
+	}
+
+	// configure instanced array
+	// -------------------------
+	glGenBuffers(1, &flowerPositionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, flowerPositionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, numFlowers * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	for (unsigned int i = 0; i < flowerModel.meshes.size(); i++)
+	{
+		unsigned int VAO = flowerModel.meshes[i].GetVAO();
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(7);
+		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(8);
+		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+		glVertexAttribDivisor(7, 1);
+		glVertexAttribDivisor(8, 1);
+
+		glBindVertexArray(0);
 	}
 }
 
@@ -626,10 +689,7 @@ void ModelsDrawingProgram::Draw()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
-	
-	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
+
 	float near_plane = 1.0f, far_plane = 20.0f;
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f,
 		near_plane, far_plane);
@@ -638,6 +698,11 @@ void ModelsDrawingProgram::Draw()
 		directionLight.position + directionLight.direction,
 		glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+	
+	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	
 	//Put informations in both the shaders
 	depthShader.Bind();
@@ -652,7 +717,8 @@ void ModelsDrawingProgram::Draw()
 	glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, config.screenWidth, config.screenHeight);
-	//Put informations in both the shaders
+	
+	//Put informations in both the shaders (terrain and instanced (models))
 	terrainShader.Bind();
 	terrainShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
 	terrainShader.SetBool("shadowBiasEnable", shadowBiasEnable);
@@ -717,6 +783,7 @@ void ModelsDrawingProgram::DrawShader(Shader& terrainShader, Shader& modelShader
 
 	rmt_EndOpenGLSample(ModelDraw);
 
+	
 	rmt_BeginOpenGLSample(TerrainDraw);
 
 	glm::mat4 model = glm::mat4(1.0f);
