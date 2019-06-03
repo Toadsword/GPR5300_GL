@@ -9,6 +9,7 @@
 
 #include <imgui.h>
 #include <Remotery.h>
+#include <random>
 
 #define Camera
 #ifdef  Camera
@@ -68,22 +69,9 @@ void CameraProgram::ProcessInput()
 }
 #endif
 
-#define Models
-#ifdef Models
-
-enum ModelTypes
-{
-	TREE,
-	BUSHES,
-	FLOWERS
-};
-const int numModelTypes = 3;
-
-const int numTrees = 50;
-const int numBushes = 20;
-const int numFlowers = 150;
-
-class ModelsDrawingProgram : public DrawingProgram
+#define Terrain
+#ifdef Terrain
+class TerrainDrawingProgram : public DrawingProgram
 {
 public:
 	void Init() override;
@@ -91,28 +79,21 @@ public:
 	void Destroy() override;
 	void UpdateUi() override;
 private:
-	void InitModels();
-	void DrawShader(Shader& currentTerrainShader, Shader& currentModelsShader);
+	Shader shaderProgram;
 
-	DirectionLight directionLight;
+	float lightPos[3] = { 0,0,-9.5 };
 
-	//////////////////////////////////////
-	//		TERRAIN CONFIGURATION		//
-	//////////////////////////////////////
-	Shader terrainShader;
-	Shader modelShader;
-
-	unsigned int terrainVAO = 0;
-	unsigned terrainVBO[2] = {};
-	unsigned int terrainEBO = 0;
+	unsigned VBO[2] = {};
+	unsigned int VAO = 0;
+	unsigned int EBO = 0;
 
 	unsigned terrainTexture = 0;
 	unsigned terrainHeightMap = 0;
 	unsigned terrainNormalMap = 0;
 
-	float* terrainVertices = nullptr;
-	float* terrainTexCoords = nullptr;
-	unsigned int* terrainIndices = nullptr;
+	float* vertices = nullptr;
+	float* texCoords = nullptr;
+	unsigned int* indices = nullptr;
 
 	float terrainOriginY = -1.0f;
 	float terrainElevationFactor = 5.0f;
@@ -121,14 +102,176 @@ private:
 	const size_t terrainHeight = 512l;
 	const float terrainResolution = 0.2f;
 
-	const size_t terrainVerticesCount = terrainWidth * terrainHeight;
-	const size_t terrainFaceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
+	const size_t verticesCount = terrainWidth * terrainHeight;
+	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
 
-	//////////////////////////////////////
-	//		Models CONFIGURATION		//
-	//////////////////////////////////////
-	//Shader treeShaderProgram;
+};
+
+void TerrainDrawingProgram::Init()
+{
+	programName = "Terrain";
+
+	vertices = (float*)calloc(3 * verticesCount, sizeof(float));//vec3, so 3 floats
+	texCoords = (float*)calloc(2 * verticesCount, sizeof(float));//vec2, so 2 floats
+
+	for (size_t i = 0l; i < verticesCount; i++)
+	{
+		vertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (float)(i % terrainWidth) * terrainResolution;//x
+		vertices[3 * i + 1] = 0.0f;//y
+		vertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
+	}
+	for (size_t i = 0l; i < verticesCount; i++)
+	{
+		const float width = terrainWidth;
+		const float height = terrainHeight;
+		texCoords[2 * i] = (float)((i % terrainWidth) + 1) / (width + 1);
+		texCoords[2 * i + 1] = (float)((i / terrainWidth) + 1) / (height + 1);
+	}
+
+	indices = (unsigned *)calloc(3l * faceCount, sizeof(unsigned));
+	size_t quad = 0;
+	for (size_t y = 0; y < terrainHeight - 1; y++)
+	{
+		for (size_t x = 0; x < terrainWidth - 1; x++)
+		{
+			const unsigned origin = x + y * terrainWidth;
+			const unsigned originBottom = origin + terrainWidth;
+
+			//face1
+			indices[6 * quad] = origin;
+			indices[6 * quad + 1] = origin + 1;
+			indices[6 * quad + 2] = originBottom;
+
+			//face2
+			indices[6 * quad + 3] = origin + 1;
+			indices[6 * quad + 4] = originBottom + 1;
+			indices[6 * quad + 5] = originBottom;
+
+			quad++;
+		}
+	}
+
+	shaderProgram.CompileSource("shaders/666_main_scene/terrain.vert", "shaders/666_main_scene/terrain.frag");
+	shaders.push_back(&shaderProgram);
+
+	terrainHeightMap = stbCreateTexture("data/terrain/plains/HeightMap.png", true, false);
+	terrainTexture = stbCreateTexture("data/terrain/plains/texture.png", true, false);
+	terrainNormalMap = stbCreateTexture("data/terrain/plains/NormalMap.png", true, false);
+
+	glGenBuffers(2, &VBO[0]);
+	glGenBuffers(1, &EBO);
+
+	glGenVertexArrays(1, &VAO); //like: new VAO()
+	// 1. bind Vertex Array Object
+	glBindVertexArray(VAO);//Now use our VAO
+	//bind vertices data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * 3 * sizeof(float), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	//bind texture coords data
+	glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+	glBufferData(GL_ARRAY_BUFFER, verticesCount * 2 * sizeof(float), texCoords, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	//bind vertices index
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceCount * 3 * sizeof(unsigned), indices, GL_STATIC_DRAW);
+	//unbind Vertex Array
+	glBindVertexArray(0);
+}
+
+void TerrainDrawingProgram::Draw()
+{
+	Engine* engine = Engine::GetPtr();
+	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
+
+	rmt_BeginOpenGLSample(HelloTerrainDraw);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glFrontFace(GL_CW);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glm::mat4 view = camera.GetViewMatrix();
+	glm::mat4 model = glm::mat4(1.0f);
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 10000.0f);
+
+	shaderProgram.Bind();
+	shaderProgram.SetVec3("lightPos", lightPos);
+	shaderProgram.SetVec3("viewPos", camera.Position);
+
+	shaderProgram.SetMat4("view", view);
+	shaderProgram.SetMat4("projection", projection);
+	shaderProgram.SetMat4("model", model);
+	shaderProgram.SetFloat("heightResolution", terrainElevationFactor);
+	shaderProgram.SetFloat("heightOrigin", terrainOriginY);
+
+	shaderProgram.SetInt("heightMap", 0);
+	shaderProgram.SetInt("diffuseMap", 1);
+	shaderProgram.SetInt("normalMap", 2);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, terrainTexture);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
+
+	glBindVertexArray(VAO);
+	glDrawElements(GL_TRIANGLES, faceCount * 3, GL_UNSIGNED_INT, 0);
+
+	glBindVertexArray(0);
+
+	glDisable(GL_CULL_FACE);
+	rmt_EndOpenGLSample();
+}
+
+void TerrainDrawingProgram::Destroy()
+{
+	free(vertices);
+	free(texCoords);
+	free(indices);
+
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(2, &VBO[0]);
+	glDeleteBuffers(1, &EBO);
+}
+
+void TerrainDrawingProgram::UpdateUi()
+{
+	DrawingProgram::UpdateUi();
+	ImGui::Separator();
+	ImGui::SliderFloat("Terrain Height Mult", &terrainElevationFactor, -10.0f, 10.0f, "height = %.3f");
+	ImGui::SliderFloat("Terrain Height Origin", &terrainOriginY, -10.0f, 10.0f, "height = %.3f");
+}
+#endif
+
+#define Models
+#ifdef Models
+const int numTrees = 50;
+const int numBushes = 20;
+const int numFlowers = 150;
+
+class ModelDrawingProgram : public DrawingProgram
+{
+public:
+	void Init() override;
+	void Draw() override;
+	void Destroy() override;
+
+private:
+	void InitModels();
+	void DrawModels();
+
+	Shader modelShaderProgram;
+
 	Model treeModel;
+	Model bushModel;
+	Model flowerModel;
+
 	GLfloat treePosition[3 * numTrees] = {
 		0.0f, 0.0f, 0.0f,
 		1.0f, 1.0f, 1.0f,
@@ -181,10 +324,7 @@ private:
 		48.0f, 48.0f, 48.0f,
 		49.0f, 49.0f, 49.0f
 	};
-	GLuint treePositionBuffer;
 
-	//Shader bushShaderProgram;
-	Model bushModel;
 	GLfloat bushPosition[3 * numBushes] = {
 		0.0f, 0.0f, 0.0f,
 		1.0f, 1.0f, 1.0f,
@@ -207,10 +347,7 @@ private:
 		18.0f, 18.0f, 18.0f,
 		19.0f, 19.0f, 19.0f
 	};
-	GLuint bushPositionBuffer;
 
-	//Shader flowerShaderProgram;
-	Model flowerModel;
 	GLfloat flowerPosition[3 * numFlowers] = {
 		0.0f, 0.0f, 0.0f,
 		1.0f, 1.0f, 1.0f,
@@ -363,191 +500,178 @@ private:
 		148.0f, 48.0f, 148.0f,
 		149.0f, 49.0f, 149.0f
 	};
-	GLuint flowerPositionBuffer;
 
+	GLuint treePositionBuffer;
+	GLuint bushPositionBuffer;
+	GLuint flowerPositionBuffer;
 
 	glm::mat4* modelMatrices;
 
-	//////////////////////////////////////
-	//		SHADOW CONFIGURATION		//
-	//////////////////////////////////////
-	Shader depthShader;
-	Shader depthInstancedShader;
-	Shader gammaShader;
+	//Ambient and SSAO
+	Shader hdrShader;
+	Plane hdrPlane;
+	unsigned hdrFBO = 0;
+	unsigned rboDepth = 0;
+	unsigned hdrColorBuffer[2];
 
-	Plane postProcessingPlane;
-	unsigned int postProcessingFBO;
-	unsigned int postProcessingRBO;
-	unsigned int postProcessingTexture;
+	Shader lightShader;
+	Shader lightingPassShader;
+	int lightNmb = 1;
+	DirectionLight directionLight;
+	float exposure = 0.1f;
+	float lightIntensity = 1.0f;
 
-	unsigned int depthMapFBO;
-	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	Shader modelDeferredShader;
+	unsigned int gBuffer;
+	unsigned int gPosition, gNormal, gColorSpec, gAlbedoSpec, gSSAOAlbedo;
+	unsigned int gRBO;
 
-	unsigned int depthMap;
+	unsigned ssaoFBO;
+	unsigned ssaoColorBuffer;
+	Shader ssaoPassShader;
 
-	bool shadowBiasEnable = false;
-	bool enablePcf = false;
-	bool enableGammaCorrection = false;
+	unsigned ssaoBlurFBO;
+	unsigned ssaoColorBufferBlur;
+	Shader ssaoBlurPassShader;
+	std::vector<glm::vec3> ssaoKernel;
+	unsigned noiseTexture;
+
+	float ssaoRadius = 0.5f;
+	int kernelSize = 64;
 };
 
-void ModelsDrawingProgram::Init()
+void ModelDrawingProgram::Init()
 {
 	programName = "Models";
-
 	auto* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
-	auto& camera = engine->GetCamera();
-
-	camera.Position = glm::vec3(0.0f, 2.0f, 10.0f);
-	
-	//////////////////////////////
-	//		Setup Terrain		//
-	//////////////////////////////
-	terrainVertices = (float*)calloc(3 * terrainVerticesCount, sizeof(float));//vec3, so 3 floats
-	terrainTexCoords = (float*)calloc(2 * terrainVerticesCount, sizeof(float));//vec2, so 2 floats
-	for (size_t i = 0l; i < terrainVerticesCount; i++)
-	{
-		terrainVertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (float)(i % terrainWidth) * terrainResolution;//x
-		terrainVertices[3 * i + 1] = 0.0f;//y
-		terrainVertices[3 * i + 2] = -(float)terrainHeight * terrainResolution / 2.0f + (float)(i / terrainWidth) * terrainResolution;//z
-	}
-	for (size_t i = 0l; i < terrainVerticesCount; i++)
-	{
-		const float width = terrainWidth;
-		const float height = terrainHeight;
-		terrainTexCoords[2 * i] = (float)((i % terrainWidth) + 1) / (width + 1);
-		terrainTexCoords[2 * i + 1] = (float)((i / terrainWidth) + 1) / (height + 1);
-	}
-
-	terrainIndices = (unsigned *)calloc(3l * terrainFaceCount, sizeof(unsigned));
-	size_t quad = 0;
-	for (size_t y = 0; y < terrainHeight - 1; y++)
-	{
-		for (size_t x = 0; x < terrainWidth - 1; x++)
-		{
-			const unsigned origin = x + y * terrainWidth;
-			const unsigned originBottom = origin + terrainWidth;
-
-			//face1
-			terrainIndices[6 * quad] = origin;
-			terrainIndices[6 * quad + 1] = origin + 1;
-			terrainIndices[6 * quad + 2] = originBottom;
-
-			//face2
-			terrainIndices[6 * quad + 3] = origin + 1;
-			terrainIndices[6 * quad + 4] = originBottom + 1;
-			terrainIndices[6 * quad + 5] = originBottom;
-
-			quad++;
-		}
-	}
-
-	terrainShader.CompileSource("shaders/666_main_scene/terrain.vert", "shaders/666_main_scene/terrain.frag");
-	shaders.push_back(&terrainShader);
-
-	terrainHeightMap = stbCreateTexture("data/terrain/plains/HeightMap.png", true, false);
-	terrainTexture = stbCreateTexture("data/terrain/plains/texture.png", true, false);
-	terrainNormalMap = stbCreateTexture("data/terrain/plains/NormalMap.png", true, false);
-
-	glGenBuffers(2, &terrainVBO[0]);
-	glGenBuffers(1, &terrainEBO);
-
-	glGenVertexArrays(1, &terrainVAO); //like: new VAO()
-	// 1. bind Vertex Array Object
-	glBindVertexArray(terrainVAO);//Now use our VAO
-	//bind vertices data
-	glBindBuffer(GL_ARRAY_BUFFER, terrainVBO[0]);
-	glBufferData(GL_ARRAY_BUFFER, terrainVerticesCount * 3 * sizeof(float), terrainVertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	//bind texture coords data
-	glBindBuffer(GL_ARRAY_BUFFER, terrainVBO[1]);
-	glBufferData(GL_ARRAY_BUFFER, terrainVerticesCount * 2 * sizeof(float), terrainTexCoords, GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	//bind vertices index
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrainFaceCount * 3 * sizeof(unsigned), terrainIndices, GL_STATIC_DRAW);
-	//unbind Vertex Array
-	glBindVertexArray(0);
-
-	//////////////////////////////
-	//		Setup Models		//
-	//////////////////////////////	
-	modelShader.CompileSource("shaders/666_main_scene/model_shadow.vert", "shaders/666_main_scene/model_shadow.frag");
-	shaders.push_back(&modelShader);
-
-	depthInstancedShader.CompileSource("shaders/engine/depth_instanced.vert", "shaders/engine/depth_instanced.frag");
-	shaders.push_back(&depthInstancedShader);
-
 	InitModels();
-	
-	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
-	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
-	flowerModel.Init("data/models/voxel_flower/Flower.obj", true);
 
-	//////////////////////////////
-	//		Setup Shadow		//
-	//////////////////////////////
-	depthShader.CompileSource("shaders/engine/depth.vert", "shaders/engine/depth.frag");
-	gammaShader.CompileSource("shaders/666_main_scene/gamma.vert", "shaders/666_main_scene/gamma.frag");
+	/******************************************************************************/
+	/***						SSAO and Ambiant occlusion						***/
+	/******************************************************************************/
+	modelDeferredShader.CompileSource(
+		"shaders/666_main_scene/ssao_basic.vert",
+		"shaders/666_main_scene/ssao_basic.frag");
+	lightingPassShader.CompileSource(
+		"shaders/666_main_scene/lighting_pass.vert",
+		"shaders/666_main_scene/lighting_pass.frag");
 
-	shaders.push_back(&depthShader);
-	shaders.push_back(&gammaShader);
+	//deferred Framebuffer	
+	glGenFramebuffers(1, &gBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
-	glGenFramebuffers(1, &depthMapFBO);
-	glGenTextures(1, &depthMap);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	// - position color buffer
+	glGenTextures(1, &gPosition);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
-	postProcessingPlane.Init();
-	glGenFramebuffers(1, &postProcessingFBO);
-	glGenTextures(1, &postProcessingTexture);
-	glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
+	// - normal color buffer
+	glGenTextures(1, &gNormal);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+	// - color + specular color buffer
+	glGenTextures(1, &gAlbedoSpec);
+	glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+		config.screenWidth, config.screenHeight,
+		0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
+
+	// - ssao color buffer
+	glGenTextures(1, &gSSAOAlbedo);
+	glBindTexture(GL_TEXTURE_2D, gSSAOAlbedo);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
-		config.screenWidth, config.screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
-	glGenRenderbuffers(1, &postProcessingRBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, postProcessingRBO);
+		config.screenWidth, config.screenHeight, 0,
+		GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gSSAOAlbedo, 0);
 
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, config.screenWidth, config.screenHeight);
+	// - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
+	unsigned int gAttachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+	glDrawBuffers(4, gAttachments);
+	glGenRenderbuffers(1, &gRBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, gRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32,
+		config.screenWidth,
+		config.screenHeight);
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-	
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postProcessingTexture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, postProcessingRBO);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
+		gRBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	//////////////////////////
-	//		Setup light		//
-	//////////////////////////
-	directionLight.enable = true;
-	directionLight.direction = glm::vec3(1.0f, -3.0f, 0.0f);
-	directionLight.intensity = 4.0f;
+	//Ambient occlusion
+	glGenFramebuffers(1, &ssaoFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
+
+	glGenTextures(1, &ssaoColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	ssaoPassShader.CompileSource(
+		"shaders/666_main_scene/ssao_pass.vert",
+		"shaders/666_main_scene/ssao_pass.frag");
+
+
+
+	// generate noise texture
+	// ----------------------
+	std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0); // generates random floats between 0.0 and 1.0
+	std::default_random_engine generator;
+	std::vector<glm::vec3> ssaoNoise;
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, 0.0f); // rotate around z-axis (in tangent space)
+		ssaoNoise.push_back(noise);
+	}
+	glGenTextures(1, &noiseTexture);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//Ambient occlusion blur
+	glGenFramebuffers(1, &ssaoBlurFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+	glGenTextures(1, &ssaoColorBufferBlur);
+	glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, config.screenWidth, config.screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBufferBlur, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	ssaoBlurPassShader.CompileSource(
+		"shaders/666_main_scene/ssao_blur.vert",
+		"shaders/666_main_scene/ssao_blur.frag");
+	
 }
 
-void ModelsDrawingProgram::InitModels()
+void ModelDrawingProgram::InitModels()
 {
-	programName = "Models";
-
-	modelShader.CompileSource(
-		"shaders/666_main_scene/model_instancing.vert",
-		"shaders/666_main_scene/model_instancing.frag");
-	shaders.push_back(&modelShader);
+	
+	modelShaderProgram.CompileSource(
+		"shaders/666_main_scene/model_instanced.vert",
+		"shaders/666_main_scene/model_instanced.frag");
+	shaders.push_back(&modelShaderProgram);
+	
 
 	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
 	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
@@ -561,7 +685,7 @@ void ModelsDrawingProgram::InitModels()
 	{
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0] * 10, treePosition[3 * i + 1] * 10, treePosition[3 * i + 2] * 10));
+		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0], treePosition[3 * i + 1], treePosition[3 * i + 2]));
 
 		modelMatrices[i] = model;
 	}
@@ -619,7 +743,7 @@ void ModelsDrawingProgram::InitModels()
 		glBindVertexArray(VAO);
 		// set attribute pointers for matrix (4 times vec4)
 		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), 0);
 		glEnableVertexAttribArray(6);
 		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
 		glEnableVertexAttribArray(7);
@@ -677,163 +801,173 @@ void ModelsDrawingProgram::InitModels()
 	}
 }
 
-void ModelsDrawingProgram::Draw()
+void ModelDrawingProgram::Draw()
 {
+	rmt_ScopedCPUSample(SSAO_CPU, 0);
+	rmt_ScopedOpenGLSample(SSAO_GPU);
+	rmt_BeginOpenGLSample(G_Buffer);
+
 	auto* engine = Engine::GetPtr();
 	auto& camera = engine->GetCamera();
 	auto& config = engine->GetConfiguration();
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthMask(GL_TRUE);
-
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
-
-	float near_plane = 1.0f, far_plane = 20.0f;
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f,
-		near_plane, far_plane);
-	glm::mat4 lightView = glm::lookAt(
-		directionLight.position,
-		directionLight.position + directionLight.direction,
-		glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-	
-	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-	glClear(GL_DEPTH_BUFFER_BIT);
-	
-	//Put informations in both the shaders
-	depthShader.Bind();
-	depthShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
-	depthInstancedShader.Bind();
-	depthInstancedShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
-
-	glCullFace(GL_FRONT);
-	DrawShader(depthShader, depthInstancedShader);
-	glCullFace(GL_BACK);	
-
-	glBindFramebuffer(GL_FRAMEBUFFER, postProcessingFBO);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glViewport(0, 0, config.screenWidth, config.screenHeight);
-	
-	//Put informations in both the shaders (terrain and instanced (models))
-	terrainShader.Bind();
-	terrainShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
-	terrainShader.SetBool("shadowBiasEnable", shadowBiasEnable);
-	terrainShader.SetBool("pcf", enablePcf);
-	terrainShader.SetInt("shadowMap", 3);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-
-	modelShader.Bind();
-	modelShader.SetMat4("lightSpaceMatrix", lightSpaceMatrix);
-	modelShader.SetBool("shadowBiasEnable", shadowBiasEnable);
-	modelShader.SetBool("pcf", enablePcf);
-	modelShader.SetInt("shadowMap", 3);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, depthMap);
-
-	DrawShader(terrainShader, modelShader);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	gammaShader.Bind();
-	glDisable(GL_DEPTH_TEST);
-	gammaShader.SetInt("screenTexture", 0);
-	gammaShader.SetBool("gammaCorrection", &enableGammaCorrection);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, postProcessingTexture);
-	postProcessingPlane.Draw();
-
-	glDisable(GL_CULL_FACE);
-}
-
-void ModelsDrawingProgram::DrawShader(Shader& terrainShader, Shader& modelShader)
-{
-	auto* engine = Engine::GetPtr();
-	auto& camera = engine->GetCamera();
-	auto& config = engine->GetConfiguration();
-
-	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(camera.Zoom,(float)config.screenWidth / config.screenHeight,0.1f, 10000.0f);
 	
-	rmt_BeginOpenGLSample(ModelDraw);
+	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
-	glm::mat4 VP = projection * view;
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	DrawModels();
+	rmt_EndOpenGLSample(); //GBUFFER
+
+	//Ambient occlusion pass
+	
+	rmt_BeginOpenGLSample(AO_Pass);
+	glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
+	{
+		glClear(GL_COLOR_BUFFER_BIT);
+		ssaoPassShader.Bind();
+
+		// generate sample kernel
+		// ----------------------
+		ssaoKernel.clear();
+		std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0); // generates random floats between 0.0 and 1.0
+		std::default_random_engine generator;
+
+		for (unsigned int i = 0; i < kernelSize; ++i)
+		{
+			glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator) * 2.0 - 1.0, randomFloats(generator));
+			sample = glm::normalize(sample);
+			sample *= randomFloats(generator);
+			float scale = float(i) / kernelSize;
+
+			// scale samples s.t. they're more aligned to center of kernel
+			scale = 0.1f + scale * scale * (1.0f - 0.1f); //a + f * (b - a);
+			sample *= scale;
+			ssaoKernel.push_back(sample);
+		}
+		// Send kernel + rotation 
+		for (unsigned int i = 0; i < kernelSize; ++i)
+			ssaoPassShader.SetVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
+
+		ssaoPassShader.SetInt("kernelSize", kernelSize);
+		ssaoPassShader.SetFloat("radius", ssaoRadius);
+		ssaoPassShader.SetMat4("projection", projection);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gPosition);
+		ssaoPassShader.SetInt("gPosition", 0);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gNormal);
+
+		ssaoPassShader.SetInt("gNormal", 1);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, noiseTexture);
+
+		ssaoPassShader.SetInt("texNoise", 2);
+		ssaoPassShader.SetVec2("noiseScale", glm::vec2(config.screenWidth / 4.0f, config.screenHeight / 4.0f));
+		hdrPlane.Draw();
+	}
+	rmt_EndOpenGLSample();
+
+	rmt_BeginOpenGLSample(SSAO_Blur);
+	{
+		// Blur SSAO texture to remove noise
+		// ------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+		glClear(GL_COLOR_BUFFER_BIT);
+		ssaoBlurPassShader.Bind();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+		hdrPlane.Draw();
+	}
+	rmt_EndOpenGLSample();
+
+	rmt_BeginOpenGLSample(LightPass);
+	//Light pass
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+
+		glClearColor(0, 0, 0, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		//copy depth buffer into hdrFBO
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBlitFramebuffer(
+			0, 0, config.screenWidth, config.screenHeight, 0, 0, config.screenWidth, config.screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST
+		);
+		lightingPassShader.Bind();
+
+		directionLight.intensity = lightIntensity;
+		directionLight.Bind(lightingPassShader, 0);
+		//light pass
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gPosition);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gNormal);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, ssaoColorBufferBlur);
+		lightingPassShader.SetInt("gPosition", 0);
+		lightingPassShader.SetInt("gNormal", 1);
+		lightingPassShader.SetInt("gAlbedoSpec", 2);
+		lightingPassShader.SetInt("gSsaoAlbedo", 3);
+		lightingPassShader.SetInt("pointLightsNmb", lightNmb);
+		lightingPassShader.SetVec3("viewPos", camera.Position);
+		//render light in forward rendering
+		hdrPlane.Draw();
+		glEnable(GL_DEPTH_TEST);
+	}
+	lightShader.Bind();
+	rmt_EndOpenGLSample();
+}
+
+void ModelDrawingProgram::DrawModels()
+{
+	rmt_BeginOpenGLSample(ModelDraw);
+	Engine* engine = Engine::GetPtr();
+	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
+
+	glFrontFace(GL_CCW);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
+	glm::mat4 view = camera.GetViewMatrix();
+	//glm::mat4 VP = projection * view;
 
 	rmt_BeginOpenGLSample(TreeDraw);
 	// Draw the trees
-	modelShader.Bind();
-	modelShader.SetMat4("VP", VP);
-	modelShader.SetBool("directionalLightEnable", true);
-	this->treeModel.Draw(modelShader, numTrees);
-	rmt_EndOpenGLSample(TreeDraw);
+	modelDeferredShader.Bind();
+	modelDeferredShader.SetMat4("view", view);
+	modelDeferredShader.SetMat4("projection", projection);
+	modelDeferredShader.SetMat4("VP", projection * view);
+	this->treeModel.Draw(modelDeferredShader, numTrees);
+	rmt_EndOpenGLSample(); // TreeDraw
 
 	rmt_BeginOpenGLSample(BushDraw);
 	// Draw the bushes
-	this->bushModel.Draw(modelShader, numBushes);
-	rmt_EndOpenGLSample(BushDraw);
+	//bushShaderProgram.Bind();
+	//bushShaderProgram.SetMat4("VP", VP);
+	this->bushModel.Draw(modelDeferredShader, numBushes);
+	rmt_EndOpenGLSample(); // BushDraw
 
 	rmt_BeginOpenGLSample(FlowerDraw);
-
 	// Draw the flowers
-	this->flowerModel.Draw(modelShader, numFlowers);
-	rmt_EndOpenGLSample(FlowerDraw);
+	//flowerShaderProgram.Bind();
+	//flowerShaderProgram.SetMat4("VP", VP);
+	this->flowerModel.Draw(modelDeferredShader, numFlowers);
+	rmt_EndOpenGLSample(); // FlowerDraw
 
-	rmt_EndOpenGLSample(ModelDraw);
-
-	
-	rmt_BeginOpenGLSample(TerrainDraw);
-
-	glm::mat4 model = glm::mat4(1.0f);
-
-	terrainShader.Bind();
-	terrainShader.SetBool("directionalLightEnable", true);
-	//currentShader.SetVec3("viewPos", camera.Position);
-
-	directionLight.Bind(terrainShader, 0);
-	terrainShader.SetMat4("VP", projection * view);
-	terrainShader.SetMat4("model", model);
-	terrainShader.SetFloat("heightResolution", terrainElevationFactor);
-	terrainShader.SetFloat("heightOrigin", terrainOriginY);
-
-	terrainShader.SetFloat("texTiling", 10.0f);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
-	terrainShader.SetInt("heightMap", 0);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, terrainTexture);
-	terrainShader.SetInt("material.texture_diffuse1", 1);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
-	terrainShader.SetInt("material.texture_normal", 2);
-
-	glBindVertexArray(terrainVAO);
-
-	//Terrain vertices are clock wise, unlike the models. 
-	//So we change the culling method.
-	glFrontFace(GL_CW);
-	glDrawElements(GL_TRIANGLES, terrainFaceCount * 3, GL_UNSIGNED_INT, 0);
-	glFrontFace(GL_CCW);
-
-	glBindVertexArray(0);
-
-	rmt_EndOpenGLSample(TerrainDraw);
+	glDisable(GL_CULL_FACE);
+	rmt_EndOpenGLSample();
 }
 
-void ModelsDrawingProgram::Destroy()
+void ModelDrawingProgram::Destroy()
 {
-	free(terrainVertices);
-	free(terrainTexCoords);
-	free(terrainIndices);
-
-	glDeleteVertexArrays(1, &terrainVAO);
-	glDeleteBuffers(2, &terrainVBO[0]);
-	glDeleteBuffers(1, &terrainEBO);
-
-
 	//Delete buffers
 	glDeleteBuffers(1, &treePositionBuffer);
 	glDeleteBuffers(1, &bushPositionBuffer);
@@ -843,19 +977,6 @@ void ModelsDrawingProgram::Destroy()
 	//treeModel.Destroy();
 	//bushModel.Destroy();
 	//flowerModel.Destroy();
-}
-
-void ModelsDrawingProgram::UpdateUi()
-{
-	DrawingProgram::UpdateUi();
-	ImGui::Separator();
-	ImGui::SliderFloat("Terrain Height Mult", &terrainElevationFactor, -10.0f, 10.0f, "height = %.3f");
-	ImGui::SliderFloat("Terrain Height Origin", &terrainOriginY, -10.0f, 10.0f, "height = %.3f");
-
-	ImGui::Separator();
-	ImGui::Checkbox("Shadow Bias", &shadowBiasEnable);
-	ImGui::Checkbox("Enable PCF", &enablePcf);
-	ImGui::Checkbox("Enable Gamma Correction", &enableGammaCorrection);
 }
 #endif
 
@@ -932,7 +1053,7 @@ private:
 	std::vector<FireflyParticle> ParticlesContainer;
 	int LastUsedParticle = 0; //Used to know how much fireflies are empty
 	GLfloat exposure = 1.6f;
-	
+
 	GLfloat particlesPosition[3 * MaxParticles];
 	GLfloat particlesColor[3 * MaxParticles];
 
@@ -984,7 +1105,7 @@ void FireflyDrawingProgram::Init()
 
 	hdrShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/hdr.frag");
 	shaders.push_back(&hdrShader);
-	
+
 	blurShader.CompileSource("shaders/666_main_scene/hdr.vert", "shaders/666_main_scene/blur.frag");
 
 	fireflyTexture = stbCreateTexture("data/sprites/firefly6.png", true, true, true);
@@ -1110,7 +1231,7 @@ void FireflyDrawingProgram::Draw()
 	//Get matrices
 	glm::mat4 viewMatrix = camera.GetViewMatrix();
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
-	
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1178,7 +1299,7 @@ void FireflyDrawingProgram::Draw()
 	}
 	//Show hdr quad
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
+
 	hdrShader.Bind();
 
 	glActiveTexture(GL_TEXTURE0);
@@ -1188,7 +1309,7 @@ void FireflyDrawingProgram::Draw()
 	hdrShader.SetInt("hdrBuffer", 0);
 	hdrShader.SetInt("bloomBlur", 1);
 	hdrShader.SetFloat("exposure", exposure);
-	
+
 	hdrPlane.Draw();
 
 	glDisable(GL_BLEND);
@@ -1245,15 +1366,15 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 	int ParticlesCount = 0;
 
 	//For each particles
-	for (int i = 0; i < NumFireflies; i++) 
+	for (int i = 0; i < NumFireflies; i++)
 	{
 		FireflyParticle& p = ParticlesContainer[i];
 
 		// Decrease traveltime
 		p.timeSinceBegin -= dt;
-		
+
 		// if firefly arrived to its destination
-		if(p.timeSinceBegin < 0.0f)
+		if (p.timeSinceBegin < 0.0f)
 		{
 			//Find a new location to go !
 			p.startPos = p.destPos;
@@ -1277,7 +1398,7 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 		p.position = (p.startPos + p.diffPos * change) - camera.Position * 5.0f;
 		// Culling of the particles (if behind of the camera, then we don't render them.
 		p.cameraDistance = glm::dot(p.position, camera.Front) - glm::dot(camera.Position, camera.Front);
-		if(p.cameraDistance > 0.0f)
+		if (p.cameraDistance > 0.0f)
 			ParticlesCount++;
 	}
 
@@ -1285,7 +1406,7 @@ int FireflyDrawingProgram::ProcessParticles(float dt)
 	SortParticles();
 
 	//Affect them to the buffer
-	for(int i = 0; i < ParticlesCount; i++)
+	for (int i = 0; i < ParticlesCount; i++)
 	{
 		FireflyParticle& p = ParticlesContainer[i];
 
@@ -1434,7 +1555,7 @@ void SkyboxDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 
-	const glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)config.screenWidth / (float)config.screenHeight,0.1f,10000.0f);
+	const glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
 
 	glDepthMask(GL_TRUE);
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -1476,8 +1597,12 @@ int main(int argc, char** argv)
 	engine.AddDrawingProgram(new SkyboxDrawingProgram());
 #endif
 
+#ifdef Terrain
+	engine.AddDrawingProgram(new TerrainDrawingProgram());
+#endif
+
 #ifdef Models
-	engine.AddDrawingProgram(new ModelsDrawingProgram());
+	engine.AddDrawingProgram(new ModelDrawingProgram());
 #endif
 
 #ifdef Firefly

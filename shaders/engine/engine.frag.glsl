@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 struct EngineMaterial 
 {
 	sampler2D texture_diffuse1;

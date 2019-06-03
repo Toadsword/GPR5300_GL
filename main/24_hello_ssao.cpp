@@ -165,8 +165,8 @@ void HelloSSAODrawingProgram::Init()
 	blurShader.CompileSource("shaders/22_hello_bloom/hdr.vert", "shaders/22_hello_bloom/blur.frag");
 
 	modelDeferredShader.CompileSource(
-		"shaders/24_hello_ssao/ssao_basic.vert",
-		"shaders/24_hello_ssao/ssao_basic.frag");
+		"shaders/24_hello_ssao/ssao.vert",
+		"shaders/24_hello_ssao/ssao.frag");
 	lightingPassShader.CompileSource(
 		"shaders/24_hello_ssao/lighting_pass.vert",
 		"shaders/24_hello_ssao/lighting_pass.frag");
@@ -213,6 +213,7 @@ void HelloSSAODrawingProgram::Init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gSSAOAlbedo, 0);
+
 	// - tell OpenGL which color attachments we'll use (of this framebuffer) for rendering 
 	unsigned int gAttachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
 	glDrawBuffers(4, gAttachments);
@@ -276,7 +277,6 @@ void HelloSSAODrawingProgram::Init()
 			"shaders/24_hello_ssao/ssao_blur.vert",
 			"shaders/24_hello_ssao/ssao_blur.frag");
 }
-
 
 
 void HelloSSAODrawingProgram::Draw()
@@ -353,10 +353,10 @@ void HelloSSAODrawingProgram::Draw()
 	hdrPlane.Draw();
 
 	rmt_EndOpenGLSample();
+	
 	rmt_BeginOpenGLSample(LightPass);
 	//Light pass
-	{
-		
+	{	
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
@@ -396,7 +396,6 @@ void HelloSSAODrawingProgram::Draw()
 		glEnable(GL_DEPTH_TEST);
 	}
 	lightShader.Bind();
-
 	rmt_EndOpenGLSample();
 
 
@@ -427,7 +426,6 @@ void HelloSSAODrawingProgram::DrawScene()
 	auto* engine = Engine::GetPtr();
 	auto& camera = engine->GetCamera();
 	auto& config = engine->GetConfiguration();
-
 
 
 	glClearColor(0, 0, 0, 0);

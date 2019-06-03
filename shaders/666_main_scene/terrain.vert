@@ -7,27 +7,23 @@ layout (location = 4) in vec3 aBitangent;
 out VS_OUT vs_out;
 
 uniform vec3 lightPos;
+uniform vec3 viewPos;
 
 uniform mat4 model;
-uniform mat4 VP; // View Projection
-//uniform mat4 view;
-//uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 projection;
 
 uniform float heightResolution;
 uniform float heightOrigin;
 
 uniform sampler2D heightMap;
 
-uniform vec3 viewPos;
-uniform mat4 lightSpaceMatrix;
-uniform float texTiling = 0;
-
 void main()
 {
 	vec4 modelPos = vec4(aPos, 1.0);
 	float height = texture(heightMap, aTexCoords).r * heightResolution + heightOrigin;
 	modelPos.y = height;
-	vec4 pos = VP * model * modelPos;
+	vec4 pos = projection * view * model * modelPos;
 
 	mat3 normalMatrix = transpose(inverse(mat3(model)));
     vec3 T = normalize(normalMatrix * aTangent);
@@ -39,7 +35,6 @@ void main()
 
 	vs_out.ViewPos = viewPos;
 	vs_out.FragPos = vec3(pos);   
-    vs_out.TexCoords = aTexCoords * texTiling;	
-	vs_out.FragPosLightSpace = lightSpaceMatrix * vec4(vs_out.FragPos, 1.0);
-    gl_Position = pos;
+    vs_out.TexCoords = aTexCoords;	
+	gl_Position = pos;
 }
