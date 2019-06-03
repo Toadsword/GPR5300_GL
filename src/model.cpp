@@ -3,7 +3,7 @@
 #include "file_utility.h"
 #include <glm/glm.hpp>
 
-void Model::Draw(Shader& shader, unsigned numInstances)
+void Model::Draw(Shader& shader, int numInstances)
 {
 	for (auto& mesh : meshes)
 		mesh.Draw(shader, numInstances);

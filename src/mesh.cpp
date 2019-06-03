@@ -9,7 +9,7 @@ Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std:
 	setupMesh();
 }
 
-void Mesh::Draw(Shader shader, unsigned numInstances)
+void Mesh::Draw(Shader shader, int numInstances)
 {
 	shader.Bind();
 	shader.SetFloat("material.shininess", 32);
@@ -33,7 +33,7 @@ void Mesh::Draw(Shader shader, unsigned numInstances)
 
 	// draw mesh
 	glBindVertexArray(VAO);
-	if(numInstances > 0)
+	if(numInstances >= 0)
 		glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0, numInstances);
 	else
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

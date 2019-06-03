@@ -9,7 +9,11 @@
 
 #include <imgui.h>
 #include <Remotery.h>
-#include <random>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/rotate_vector.hpp>
+
+const float zNear = 0.1f;
+const float zFar = 2000.0f;
 
 #define Camera
 #ifdef  Camera
@@ -96,7 +100,7 @@ private:
 	unsigned int* indices = nullptr;
 
 	float terrainOriginY = -1.0f;
-	float terrainElevationFactor = 5.0f;
+	float terrainElevationFactor = 1.8f;
 
 	const size_t terrainWidth = 512l;
 	const size_t terrainHeight = 512l;
@@ -197,7 +201,7 @@ void TerrainDrawingProgram::Draw()
 	glm::mat4 view = camera.GetViewMatrix();
 	glm::mat4 model = glm::mat4(1.0f);
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / config.screenHeight, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, zNear, zFar);
 
 	shaderProgram.Bind();
 	shaderProgram.SetVec3("lightPos", lightPos);
@@ -251,9 +255,29 @@ void TerrainDrawingProgram::UpdateUi()
 
 #define Models
 #ifdef Models
-const int numTrees = 50;
-const int numBushes = 20;
-const int numFlowers = 150;
+const unsigned numTrees = 500;
+const float scaleTree = 0.5f;
+const unsigned numBushes = 200;
+const float scaleBush = 0.5f;
+const unsigned numFlowers = 5;
+const float scaleFlower = 1.0f;
+
+struct ModelInfos
+{
+	glm::vec3 position, rotation;
+	float cameraDistance;
+	GLuint optiTexture;
+	bool operator<(const ModelInfos& that) const {
+		// Sort in reverse order : far particles drawn first.
+		return this->cameraDistance > that.cameraDistance;
+	}
+};
+
+struct BoundingSphere
+{
+	glm::vec3 center = glm::vec3(0.0f);
+	float radius = 0.0f;
+};
 
 class ModelDrawingProgram : public DrawingProgram
 {
@@ -264,250 +288,32 @@ public:
 
 private:
 	void InitModels();
-	void DrawModels();
+	void DrawModels(glm::vec3);
+	glm::vec3 CullModels();
+	unsigned CullingTest(std::vector<ModelInfos>& models, unsigned maxNum);
 
 	Shader modelShaderProgram;
+	Shader bushShaderProgram;
 
 	Model treeModel;
 	Model bushModel;
 	Model flowerModel;
 
-	GLfloat treePosition[3 * numTrees] = {
-		0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f,
-		2.0f, 2.0f, 2.0f,
-		3.0f, 3.0f, 3.0f,
-		4.0f, 4.0f, 4.0f,
-		5.0f, 5.0f, 5.0f,
-		6.0f, 6.0f, 6.0f,
-		7.0f, 7.0f, 7.0f,
-		8.0f, 8.0f, 8.0f,
-		9.0f, 9.0f, 9.0f,
-		10.0f, 10.0f, 10.0f,
-		11.0f, 11.0f, 11.0f,
-		12.0f, 12.0f, 12.0f,
-		13.0f, 13.0f, 13.0f,
-		14.0f, 14.0f, 14.0f,
-		15.0f, 15.0f, 15.0f,
-		16.0f, 16.0f, 16.0f,
-		17.0f, 17.0f, 17.0f,
-		18.0f, 18.0f, 18.0f,
-		19.0f, 19.0f, 19.0f,
-		20.0f, 20.0f, 20.0f,
-		21.0f, 21.0f, 21.0f,
-		22.0f, 22.0f, 22.0f,
-		23.0f, 23.0f, 23.0f,
-		24.0f, 24.0f, 24.0f,
-		25.0f, 25.0f, 25.0f,
-		26.0f, 26.0f, 26.0f,
-		27.0f, 27.0f, 27.0f,
-		28.0f, 28.0f, 28.0f,
-		29.0f, 29.0f, 29.0f,
-		30.0f, 30.0f, 30.0f,
-		31.0f, 31.0f, 31.0f,
-		32.0f, 32.0f, 32.0f,
-		33.0f, 33.0f, 33.0f,
-		34.0f, 34.0f, 34.0f,
-		35.0f, 35.0f, 35.0f,
-		36.0f, 36.0f, 36.0f,
-		37.0f, 37.0f, 37.0f,
-		38.0f, 38.0f, 38.0f,
-		39.0f, 39.0f, 39.0f,
-		40.0f, 40.0f, 40.0f,
-		41.0f, 41.0f, 41.0f,
-		42.0f, 42.0f, 42.0f,
-		43.0f, 43.0f, 43.0f,
-		44.0f, 44.0f, 44.0f,
-		45.0f, 45.0f, 45.0f,
-		46.0f, 46.0f, 46.0f,
-		47.0f, 47.0f, 47.0f,
-		48.0f, 48.0f, 48.0f,
-		49.0f, 49.0f, 49.0f
-	};
+	GLuint treePositionBuffer, treeRotationBuffer;
+	GLuint bushPositionBuffer, bushRotationBuffer;
+	GLuint flowerPositionBuffer, flowerRotationBuffer;
 
-	GLfloat bushPosition[3 * numBushes] = {
-		0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f,
-		2.0f, 2.0f, 2.0f,
-		3.0f, 3.0f, 3.0f,
-		4.0f, 4.0f, 4.0f,
-		5.0f, 5.0f, 5.0f,
-		6.0f, 6.0f, 6.0f,
-		7.0f, 7.0f, 7.0f,
-		8.0f, 8.0f, 8.0f,
-		9.0f, 9.0f, 9.0f,
-		10.0f, 10.0f, 10.0f,
-		11.0f, 11.0f, 11.0f,
-		12.0f, 12.0f, 12.0f,
-		13.0f, 13.0f, 13.0f,
-		14.0f, 14.0f, 14.0f,
-		15.0f, 15.0f, 15.0f,
-		16.0f, 16.0f, 16.0f,
-		17.0f, 17.0f, 17.0f,
-		18.0f, 18.0f, 18.0f,
-		19.0f, 19.0f, 19.0f
-	};
+	std::vector<ModelInfos> treeInfos = std::vector<ModelInfos>(numTrees);
+	std::vector<ModelInfos> bushInfos = std::vector<ModelInfos>(numBushes);
+	std::vector<ModelInfos> flowerInfos = std::vector<ModelInfos>(numFlowers);
 
-	GLfloat flowerPosition[3 * numFlowers] = {
-		0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f,
-		2.0f, 2.0f, 2.0f,
-		3.0f, 3.0f, 3.0f,
-		4.0f, 4.0f, 4.0f,
-		5.0f, 5.0f, 5.0f,
-		6.0f, 6.0f, 6.0f,
-		7.0f, 7.0f, 7.0f,
-		8.0f, 8.0f, 8.0f,
-		9.0f, 9.0f, 9.0f,
-		10.0f, 10.0f, 10.0f,
-		11.0f, 11.0f, 11.0f,
-		12.0f, 12.0f, 12.0f,
-		13.0f, 13.0f, 13.0f,
-		14.0f, 14.0f, 14.0f,
-		15.0f, 15.0f, 15.0f,
-		16.0f, 16.0f, 16.0f,
-		17.0f, 17.0f, 17.0f,
-		18.0f, 18.0f, 18.0f,
-		19.0f, 19.0f, 19.0f,
-		20.0f, 20.0f, 20.0f,
-		21.0f, 21.0f, 21.0f,
-		22.0f, 22.0f, 22.0f,
-		23.0f, 23.0f, 23.0f,
-		24.0f, 24.0f, 24.0f,
-		25.0f, 25.0f, 25.0f,
-		26.0f, 26.0f, 26.0f,
-		27.0f, 27.0f, 27.0f,
-		28.0f, 28.0f, 28.0f,
-		29.0f, 29.0f, 29.0f,
-		30.0f, 30.0f, 30.0f,
-		31.0f, 31.0f, 31.0f,
-		32.0f, 32.0f, 32.0f,
-		33.0f, 33.0f, 33.0f,
-		34.0f, 34.0f, 34.0f,
-		35.0f, 35.0f, 35.0f,
-		36.0f, 36.0f, 36.0f,
-		37.0f, 37.0f, 37.0f,
-		38.0f, 38.0f, 38.0f,
-		39.0f, 39.0f, 39.0f,
-		40.0f, 40.0f, 40.0f,
-		41.0f, 41.0f, 41.0f,
-		42.0f, 42.0f, 42.0f,
-		43.0f, 43.0f, 43.0f,
-		44.0f, 44.0f, 44.0f,
-		45.0f, 45.0f, 45.0f,
-		46.0f, 46.0f, 46.0f,
-		47.0f, 47.0f, 47.0f,
-		48.0f, 48.0f, 48.0f,
-		49.0f, 49.0f, 49.0f,
-		50.0f, 0.0f, 50.0f,
-		51.0f, 1.0f, 51.0f,
-		52.0f, 2.0f, 52.0f,
-		53.0f, 3.0f, 53.0f,
-		54.0f, 4.0f, 54.0f,
-		55.0f, 5.0f, 55.0f,
-		56.0f, 6.0f, 56.0f,
-		57.0f, 7.0f, 57.0f,
-		58.0f, 8.0f, 58.0f,
-		59.0f, 9.0f, 59.0f,
-		60.0f, 0.0f, 60.0f,
-		61.0f, 1.0f, 61.0f,
-		62.0f, 2.0f, 62.0f,
-		63.0f, 3.0f, 63.0f,
-		64.0f, 4.0f, 64.0f,
-		65.0f, 5.0f, 65.0f,
-		66.0f, 6.0f, 66.0f,
-		67.0f, 7.0f, 67.0f,
-		68.0f, 8.0f, 68.0f,
-		69.0f, 9.0f, 69.0f,
-		70.0f, 0.0f, 70.0f,
-		71.0f, 1.0f, 71.0f,
-		72.0f, 2.0f, 72.0f,
-		73.0f, 3.0f, 73.0f,
-		74.0f, 4.0f, 74.0f,
-		75.0f, 5.0f, 75.0f,
-		76.0f, 6.0f, 76.0f,
-		77.0f, 7.0f, 77.0f,
-		78.0f, 8.0f, 78.0f,
-		79.0f, 9.0f, 79.0f,
-		80.0f, 0.0f, 80.0f,
-		81.0f, 1.0f, 81.0f,
-		82.0f, 2.0f, 82.0f,
-		83.0f, 3.0f, 83.0f,
-		84.0f, 4.0f, 84.0f,
-		85.0f, 5.0f, 85.0f,
-		86.0f, 6.0f, 86.0f,
-		87.0f, 7.0f, 87.0f,
-		88.0f, 8.0f, 88.0f,
-		89.0f, 9.0f, 89.0f,
-		90.0f, 0.0f, 90.0f,
-		91.0f, 1.0f, 91.0f,
-		92.0f, 2.0f, 92.0f,
-		93.0f, 3.0f, 93.0f,
-		94.0f, 4.0f, 94.0f,
-		95.0f, 5.0f, 95.0f,
-		96.0f, 6.0f, 96.0f,
-		97.0f, 7.0f, 97.0f,
-		98.0f, 8.0f, 98.0f,
-		99.0f, 9.0f, 99.0f,
-		100.0f, 0.0f, 0.0f,
-		101.0f, 1.0f, 101.0f,
-		102.0f, 2.0f, 102.0f,
-		103.0f, 3.0f, 103.0f,
-		104.0f, 4.0f, 104.0f,
-		105.0f, 5.0f, 105.0f,
-		106.0f, 6.0f, 106.0f,
-		107.0f, 7.0f, 107.0f,
-		108.0f, 8.0f, 108.0f,
-		109.0f, 9.0f, 109.0f,
-		110.0f, 10.0f, 110.0f,
-		111.0f, 11.0f, 111.0f,
-		112.0f, 12.0f, 112.0f,
-		113.0f, 13.0f, 113.0f,
-		114.0f, 14.0f, 114.0f,
-		115.0f, 15.0f, 115.0f,
-		116.0f, 16.0f, 116.0f,
-		117.0f, 17.0f, 117.0f,
-		118.0f, 18.0f, 118.0f,
-		119.0f, 19.0f, 119.0f,
-		120.0f, 20.0f, 120.0f,
-		121.0f, 21.0f, 121.0f,
-		122.0f, 22.0f, 122.0f,
-		123.0f, 23.0f, 123.0f,
-		124.0f, 24.0f, 124.0f,
-		125.0f, 25.0f, 125.0f,
-		126.0f, 26.0f, 126.0f,
-		127.0f, 27.0f, 127.0f,
-		128.0f, 28.0f, 128.0f,
-		129.0f, 29.0f, 129.0f,
-		130.0f, 30.0f, 130.0f,
-		131.0f, 31.0f, 131.0f,
-		132.0f, 32.0f, 132.0f,
-		133.0f, 33.0f, 133.0f,
-		134.0f, 34.0f, 134.0f,
-		135.0f, 35.0f, 135.0f,
-		136.0f, 36.0f, 136.0f,
-		137.0f, 37.0f, 137.0f,
-		138.0f, 38.0f, 138.0f,
-		139.0f, 39.0f, 139.0f,
-		140.0f, 40.0f, 140.0f,
-		141.0f, 41.0f, 141.0f,
-		142.0f, 42.0f, 142.0f,
-		143.0f, 43.0f, 143.0f,
-		144.0f, 44.0f, 144.0f,
-		145.0f, 45.0f, 145.0f,
-		146.0f, 46.0f, 146.0f,
-		147.0f, 47.0f, 147.0f,
-		148.0f, 48.0f, 148.0f,
-		149.0f, 49.0f, 149.0f
-	};
+	GLfloat treePositions[3 * numTrees], bushPositions[3 * numBushes], flowerPositions[3 * numFlowers];
+	GLfloat treeRotations[3 * numTrees], bushRotations[3 * numBushes], flowerRotations[3 * numFlowers];
 
-	GLuint treePositionBuffer;
-	GLuint bushPositionBuffer;
-	GLuint flowerPositionBuffer;
-
-	glm::mat4* modelMatrices;
-
+	std::vector<BoundingSphere> boundingSpheres = std::vector<BoundingSphere>(numTrees);
+	//glm::mat4* modelMatrices;
 	//Ambient and SSAO
+	/*
 	Shader hdrShader;
 	Plane hdrPlane;
 	unsigned hdrFBO = 0;
@@ -538,6 +344,7 @@ private:
 
 	float ssaoRadius = 0.5f;
 	int kernelSize = 64;
+	*/
 };
 
 void ModelDrawingProgram::Init()
@@ -550,6 +357,7 @@ void ModelDrawingProgram::Init()
 	/******************************************************************************/
 	/***						SSAO and Ambiant occlusion						***/
 	/******************************************************************************/
+	/*
 	modelDeferredShader.CompileSource(
 		"shaders/666_main_scene/ssao_basic.vert",
 		"shaders/666_main_scene/ssao_basic.frag");
@@ -661,17 +469,20 @@ void ModelDrawingProgram::Init()
 	ssaoBlurPassShader.CompileSource(
 		"shaders/666_main_scene/ssao_blur.vert",
 		"shaders/666_main_scene/ssao_blur.frag");
-	
+	*/
 }
 
 void ModelDrawingProgram::InitModels()
 {
-	
 	modelShaderProgram.CompileSource(
 		"shaders/666_main_scene/model_instanced.vert",
 		"shaders/666_main_scene/model_instanced.frag");
 	shaders.push_back(&modelShaderProgram);
-	
+
+	bushShaderProgram.CompileSource(
+		"shaders/666_main_scene/model_instanced.vert",
+		"shaders/666_main_scene/model_instanced.frag");
+	shaders.push_back(&bushShaderProgram);
 
 	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
 	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
@@ -680,122 +491,133 @@ void ModelDrawingProgram::InitModels()
 	/******************************************************************************/
 	/***								Loading trees							***/
 	/******************************************************************************/
-	modelMatrices = new glm::mat4[numTrees];
-	for (unsigned int i = 0; i < numTrees; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		model = glm::translate(model, glm::vec3(treePosition[3 * i + 0], treePosition[3 * i + 1], treePosition[3 * i + 2]));
+	for (int i = 0; i < numTrees; i++) {
+		treeInfos[i].position = glm::vec3(
+			rand() % 78 - 39,
+			-3,
+			rand() % 78 - 39
+		);
 
-		modelMatrices[i] = model;
+		treeInfos[i].rotation = glm::vec3(
+			0, 
+			rand() % 360,
+			0
+		);
+
+		treeInfos[i].cameraDistance = -1.0f;
 	}
-
-	// configure instanced array
-	// -------------------------
+	
 	glGenBuffers(1, &treePositionBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, treePositionBuffer);
-	glBufferData(GL_ARRAY_BUFFER, numTrees * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
-
+	glGenBuffers(1, &treeRotationBuffer);
 	for (unsigned int i = 0; i < treeModel.meshes.size(); i++)
 	{
 		unsigned int VAO = treeModel.meshes[i].GetVAO();
 		glBindVertexArray(VAO);
-		// set attribute pointers for matrix (4 times vec4)
+		// set attribute pointers for vec3
 		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(8);
-		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-
+		glBindBuffer(GL_ARRAY_BUFFER, treePositionBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numTrees * sizeof(glm::vec3), &treePositions, GL_STREAM_DRAW);
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
-		glVertexAttribDivisor(7, 1);
-		glVertexAttribDivisor(8, 1);
 
+		// set attribute pointers for vec3
+		glEnableVertexAttribArray(6);
+		glBindBuffer(GL_ARRAY_BUFFER, treeRotationBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numTrees * sizeof(glm::vec3), &treeRotations, GL_STREAM_DRAW);
+		glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+		glVertexAttribDivisor(6, 1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
 
 	/******************************************************************************/
 	/***								Loading bushes							***/
 	/******************************************************************************/
-	modelMatrices = new glm::mat4[numBushes];
-	for (unsigned int i = 0; i < numBushes; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		model = glm::translate(model, glm::vec3(bushPosition[3 * i + 0], bushPosition[3 * i + 1], bushPosition[3 * i + 2]));
+	for (int i = 0; i < numBushes; i++) {
+		bushInfos[i].position = glm::vec3(
+			rand() % 78 - 39,
+			-3,
+			rand() % 78 - 39
+		);
 
-		modelMatrices[i] = model;
+		bushInfos[i].rotation = glm::vec3(
+			0,
+			rand() % 360,
+			0
+		);
+
+		bushInfos[i].cameraDistance = -1.0f;
 	}
 
 	// configure instanced array
 	// -------------------------
 	glGenBuffers(1, &bushPositionBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, bushPositionBuffer);
-	glBufferData(GL_ARRAY_BUFFER, numBushes * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
-
+	glGenBuffers(1, &bushRotationBuffer);
 	for (unsigned int i = 0; i < bushModel.meshes.size(); i++)
 	{
 		unsigned int VAO = bushModel.meshes[i].GetVAO();
 		glBindVertexArray(VAO);
-		// set attribute pointers for matrix (4 times vec4)
+		// set attribute pointers for vec3
 		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), 0);
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(8);
-		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-
+		glBindBuffer(GL_ARRAY_BUFFER, bushPositionBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numBushes * sizeof(glm::vec3), &bushPositions, GL_STREAM_DRAW);
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 		glVertexAttribDivisor(5, 1);
-		glVertexAttribDivisor(6, 1);
-		glVertexAttribDivisor(7, 1);
-		glVertexAttribDivisor(8, 1);
 
+		// set attribute pointers for vec3
+		glEnableVertexAttribArray(6);
+		glBindBuffer(GL_ARRAY_BUFFER, bushRotationBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numBushes * sizeof(glm::vec3), &bushRotations, GL_STREAM_DRAW);
+		glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+		glVertexAttribDivisor(6, 1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	}
 
 	/******************************************************************************/
 	/***								Loading flowers							***/
 	/******************************************************************************/
-	modelMatrices = new glm::mat4[numFlowers];
-	for (unsigned int i = 0; i < numFlowers; i++)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
-		model = glm::translate(model, glm::vec3(flowerPosition[3 * i + 0], flowerPosition[3 * i + 1], flowerPosition[3 * i + 2]));
+	for (int i = 0; i < numFlowers; i++) {
+		flowerInfos[i].position = glm::vec3(
+			rand() % 78 - 39,
+			-3,
+			rand() % 78 - 39
+		);
 
-		modelMatrices[i] = model;
+		flowerInfos[i].rotation = glm::vec3(
+			0,
+			rand() % 360,
+			0
+		);
+
+		flowerInfos[i].cameraDistance = -1.0f;
 	}
 
 	// configure instanced array
 	// -------------------------
 	glGenBuffers(1, &flowerPositionBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, flowerPositionBuffer);
-	glBufferData(GL_ARRAY_BUFFER, numFlowers * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
-
+	glGenBuffers(1, &flowerRotationBuffer);
 	for (unsigned int i = 0; i < flowerModel.meshes.size(); i++)
 	{
 		unsigned int VAO = flowerModel.meshes[i].GetVAO();
 		glBindVertexArray(VAO);
-		// set attribute pointers for matrix (4 times vec4)
+		// set attribute pointers for vec3
 		glEnableVertexAttribArray(5);
-		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-		glEnableVertexAttribArray(6);
-		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-		glEnableVertexAttribArray(7);
-		glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-		glEnableVertexAttribArray(8);
-		glVertexAttribPointer(8, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+		glBindBuffer(GL_ARRAY_BUFFER, flowerPositionBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numFlowers * sizeof(glm::vec3), &flowerPositions, GL_STREAM_DRAW);
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 
 		glVertexAttribDivisor(5, 1);
+
+		// set attribute pointers for vec3
+		glEnableVertexAttribArray(6);
+		glBindBuffer(GL_ARRAY_BUFFER, flowerRotationBuffer);
+		glBufferData(GL_ARRAY_BUFFER, numBushes * sizeof(glm::vec3), &flowerRotations, GL_STREAM_DRAW);
+		glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 		glVertexAttribDivisor(6, 1);
-		glVertexAttribDivisor(7, 1);
-		glVertexAttribDivisor(8, 1);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		glBindVertexArray(0);
 	}
@@ -803,6 +625,7 @@ void ModelDrawingProgram::InitModels()
 
 void ModelDrawingProgram::Draw()
 {
+	/*
 	rmt_ScopedCPUSample(SSAO_CPU, 0);
 	rmt_ScopedOpenGLSample(SSAO_GPU);
 	rmt_BeginOpenGLSample(G_Buffer);
@@ -817,8 +640,10 @@ void ModelDrawingProgram::Draw()
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	*/
 	
-	DrawModels();
+	DrawModels(CullModels());
+	/*
 	rmt_EndOpenGLSample(); //GBUFFER
 
 	//Ambient occlusion pass
@@ -922,9 +747,10 @@ void ModelDrawingProgram::Draw()
 	}
 	lightShader.Bind();
 	rmt_EndOpenGLSample();
+	*/
 }
 
-void ModelDrawingProgram::DrawModels()
+void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 {
 	rmt_BeginOpenGLSample(ModelDraw);
 	Engine* engine = Engine::GetPtr();
@@ -935,35 +761,226 @@ void ModelDrawingProgram::DrawModels()
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, zNear, zFar);
 	glm::mat4 view = camera.GetViewMatrix();
 	//glm::mat4 VP = projection * view;
 
 	rmt_BeginOpenGLSample(TreeDraw);
 	// Draw the trees
-	modelDeferredShader.Bind();
-	modelDeferredShader.SetMat4("view", view);
-	modelDeferredShader.SetMat4("projection", projection);
-	modelDeferredShader.SetMat4("VP", projection * view);
-	this->treeModel.Draw(modelDeferredShader, numTrees);
+	modelShaderProgram.Bind();
+	//modelShaderProgram.SetMat4("view", view);
+	//modelShaderProgram.SetMat4("projection", projection);
+	modelShaderProgram.SetMat4("VP", projection * view);
+
+	// Update the buffer with all the positions
+	glBindBuffer(GL_ARRAY_BUFFER, treePositionBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.x * 3 * sizeof(float), &treePositions);
+
+	// Update the buffer with all the rotations
+	glBindBuffer(GL_ARRAY_BUFFER, treeRotationBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.x * 3 * sizeof(float), &treeRotations);
+
+	modelShaderProgram.SetFloat("aScale", scaleTree);
+	this->treeModel.Draw(modelShaderProgram, modelCount.x);
 	rmt_EndOpenGLSample(); // TreeDraw
 
 	rmt_BeginOpenGLSample(BushDraw);
 	// Draw the bushes
 	//bushShaderProgram.Bind();
-	//bushShaderProgram.SetMat4("VP", VP);
-	this->bushModel.Draw(modelDeferredShader, numBushes);
+	//modelShaderProgram.SetMat4("view", view);
+	//modelShaderProgram.SetMat4("projection", projection);
+	//bushShaderProgram.SetMat4("VP", projection * view);
+
+	// Update the buffer with all the positions
+	glBindBuffer(GL_ARRAY_BUFFER, bushPositionBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.y * 3 * sizeof(float), &bushPositions);
+
+	// Update the buffer with all the rotations
+	glBindBuffer(GL_ARRAY_BUFFER, bushRotationBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.y * 3 * sizeof(float), &bushRotations);
+
+	modelShaderProgram.SetFloat("aScale", scaleBush);
+	this->bushModel.Draw(modelShaderProgram, modelCount.y);
+
 	rmt_EndOpenGLSample(); // BushDraw
 
 	rmt_BeginOpenGLSample(FlowerDraw);
 	// Draw the flowers
 	//flowerShaderProgram.Bind();
 	//flowerShaderProgram.SetMat4("VP", VP);
-	this->flowerModel.Draw(modelDeferredShader, numFlowers);
+
+	// Update the buffer with all the positions
+	glBindBuffer(GL_ARRAY_BUFFER, flowerPositionBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.z * 3 * sizeof(float), &flowerPositions);
+
+	// Update the buffer with all the rotations
+	glBindBuffer(GL_ARRAY_BUFFER, flowerRotationBuffer);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.z * 3 * sizeof(float), &flowerRotations);
+	modelShaderProgram.SetFloat("aScale", scaleFlower);
+	this->flowerModel.Draw(modelShaderProgram, modelCount.z);
 	rmt_EndOpenGLSample(); // FlowerDraw
 
 	glDisable(GL_CULL_FACE);
 	rmt_EndOpenGLSample();
+}
+
+glm::vec3 ModelDrawingProgram::CullModels()
+{
+	Engine* engine = Engine::GetPtr();
+	auto& config = engine->GetConfiguration();
+	auto& camera = engine->GetCamera();
+
+	glm::vec3 modelCount = glm::vec3( 0, 0, 0 );
+
+	//Generate the list of spheres
+	rmt_BeginCPUSample(CalculateSphereTreeCPU, 0);
+	for (size_t j = 0; j < numTrees; j++)
+	{
+		BoundingSphere& boundingSphere = boundingSpheres[j];
+		boundingSphere.center = treeModel.modelCenter;
+		boundingSphere.radius = treeModel.modelRadius * scaleTree;
+	}
+	rmt_EndCPUSample(); //Generate sphere
+	modelCount.x = CullingTest(treeInfos, numTrees);
+
+	//Generate the list of spheres
+	rmt_BeginCPUSample(CalculateSphereTreeCPU, 0);
+	for (size_t j = 0; j < numBushes; j++)
+	{
+		BoundingSphere& boundingSphere = boundingSpheres[j];
+		boundingSphere.center = bushModel.modelCenter;
+		boundingSphere.radius = bushModel.modelRadius * scaleBush;
+	}
+	rmt_EndCPUSample(); //Generate sphere
+	modelCount.y = CullingTest(bushInfos, numBushes);
+
+
+	//Generate the list of spheres
+	rmt_BeginCPUSample(CalculateSphereTreeCPU, 0);
+	for (size_t j = 0; j < numFlowers; j++)
+	{
+		BoundingSphere& boundingSphere = boundingSpheres[j];
+		boundingSphere.center = flowerModel.modelCenter;
+		boundingSphere.radius = flowerModel.modelRadius * scaleFlower;
+	}
+	rmt_EndCPUSample(); //Generate sphere
+	modelCount.z = CullingTest(flowerInfos, numFlowers);
+
+	// Order the models
+	std::sort(&treeInfos[0], &treeInfos[numTrees - 1]);
+	std::sort(&bushInfos[0], &bushInfos[numBushes - 1]);
+	std::sort(&flowerInfos[0], &flowerInfos[numFlowers - 1]);
+
+	//Affect them to the buffer
+	for (int i = 0; i < modelCount.x; i++)
+	{
+		ModelInfos& t = treeInfos[i];
+
+		// Calculate position and fill GPU budder
+		treePositions[3 * i + 0] = t.position.x;
+		treePositions[3 * i + 1] = t.position.y;
+		treePositions[3 * i + 2] = t.position.z;
+
+		treeRotations[3 * i + 0] = t.rotation.x;
+		treeRotations[3 * i + 1] = t.rotation.y;
+		treeRotations[3 * i + 2] = t.rotation.z;
+	}
+
+	for (int i = 0; i < modelCount.y; i++)
+	{
+		ModelInfos& b = bushInfos[i];
+
+		// Calculate position and fill GPU budder
+		bushPositions[3 * i + 0] = b.position.x;
+		bushPositions[3 * i + 1] = b.position.y;
+		bushPositions[3 * i + 2] = b.position.z;
+
+		bushRotations[3 * i + 0] = b.rotation.x;
+		bushRotations[3 * i + 1] = b.rotation.y;
+		bushRotations[3 * i + 2] = b.rotation.z;
+	}
+
+	for (int i = 0; i < modelCount.z; i++)
+	{
+		ModelInfos& f = flowerInfos[i];
+
+		// Calculate position and fill GPU budder
+		flowerPositions[3 * i + 0] = f.position.x;
+		flowerPositions[3 * i + 1] = f.position.y;
+		flowerPositions[3 * i + 2] = f.position.z;
+
+		flowerRotations[3 * i + 0] = f.rotation.x;
+		flowerRotations[3 * i + 1] = f.rotation.y;
+		flowerRotations[3 * i + 2] = f.rotation.z;
+	}
+
+	return modelCount;
+}
+
+unsigned ModelDrawingProgram::CullingTest(std::vector<ModelInfos>& models, unsigned maxNum)
+{
+	unsigned count = 0;
+	auto& config = Engine::GetPtr()->GetConfiguration();
+	auto& mainCamera = Engine::GetPtr()->GetCamera();
+
+	const float aspect = static_cast<float>(config.screenWidth) / static_cast<float>(config.screenHeight);
+	const glm::vec3 leftDir = glm::normalize(
+		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) / 2.0f * aspect, mainCamera.Up));
+	const glm::vec3 leftNormal = glm::normalize(glm::cross(leftDir, mainCamera.Up));
+
+	const glm::vec3 rightDir = glm::normalize(
+		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) / 2.0f * aspect, mainCamera.Up));
+	const glm::vec3 rightNormal = glm::normalize(-glm::cross(rightDir, mainCamera.Up));
+
+	const glm::vec3 upDir = glm::normalize(
+		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) / 2.0f, mainCamera.Right));
+	const glm::vec3 upNormal = glm::normalize(glm::cross(upDir, mainCamera.Right));
+
+	const glm::vec3 downDir = glm::normalize(
+		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) / 2.0f, mainCamera.Right));
+	const glm::vec3 downNormal = glm::normalize(-glm::cross(downDir, mainCamera.Right));
+
+	for (size_t j = 0; j < maxNum; j++)
+	{
+		BoundingSphere& boundingSphere = boundingSpheres[j];
+		const glm::vec3 cameraToSphere = boundingSphere.center - mainCamera.Position;
+		//near culling
+		if (glm::dot(cameraToSphere, mainCamera.Front) < zNear + boundingSphere.radius)
+		{
+			continue;
+		}
+		//far culling
+		if (glm::dot(cameraToSphere, mainCamera.Front) > zFar - boundingSphere.radius)
+		{
+			continue;
+		}
+		//left culling
+		if (glm::dot(cameraToSphere, leftNormal) < boundingSphere.radius)
+		{
+			continue;
+		}
+
+		//right culling
+		if (glm::dot(cameraToSphere, rightNormal) < boundingSphere.radius)
+		{
+			continue;
+		}
+
+		//up culling
+		if (glm::dot(cameraToSphere, upNormal) > -boundingSphere.radius)
+		{
+			continue;
+		}
+
+		//down culling
+		if (glm::dot(cameraToSphere, downNormal) > -boundingSphere.radius)
+		{
+			continue;
+		}
+
+		count++;
+	}
+	return count;
 }
 
 void ModelDrawingProgram::Destroy()
@@ -993,7 +1010,7 @@ struct FireflyParticle {
 	}
 };
 
-const int MaxParticles = 8000;
+const int MaxParticles = 80;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -1014,8 +1031,8 @@ private:
 
 	//Consts (Editable with Imgui)
 	int NumFireflies = MaxParticles;
-	GLfloat botRightLimit[3] = { -10.0f, -10.0f, -10.0f };
-	int range[3] = { 200, 200, 200 };
+	GLfloat botRightLimit[3] = { 3.0f, 3.0f, 3.0f };
+	int range[3] = { 40, 20, 40 };
 
 	Plane hdrPlane;
 	GLuint hdrFBO = 0;
@@ -1230,7 +1247,7 @@ void FireflyDrawingProgram::Draw()
 
 	//Get matrices
 	glm::mat4 viewMatrix = camera.GetViewMatrix();
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, zNear, zFar);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1502,7 +1519,7 @@ void SkyboxDrawingProgram::Init()
 		"shaders/666_main_scene/skybox.frag"
 	);
 	shaders.push_back(&cubemapShader);
-	/*std::vector<std::string> faces =
+	std::vector<std::string> faces =
 	{
 		"data/skybox/nebula/purplenebula_lf.tga",
 		"data/skybox/nebula/purplenebula_rt.tga",
@@ -1510,7 +1527,7 @@ void SkyboxDrawingProgram::Init()
 		"data/skybox/nebula/purplenebula_dn.tga",
 		"data/skybox/nebula/purplenebula_ft.tga",
 		"data/skybox/nebula/purplenebula_bk.tga"
-	};*/
+	};
 	/*std::vector<std::string> faces =
 	{
 		"data/skybox/emerald/emeraldfog_lf.tga",
@@ -1520,6 +1537,7 @@ void SkyboxDrawingProgram::Init()
 		"data/skybox/emerald/emeraldfog_ft.tga",
 		"data/skybox/emerald/emeraldfog_bk.tga"
 	};*/
+	/*
 	std::vector<std::string> faces =
 	{
 		"data/skybox/fluffballday/FluffballDayLeft.hdr",
@@ -1528,7 +1546,7 @@ void SkyboxDrawingProgram::Init()
 		"data/skybox/fluffballday/FluffballDayBottom.hdr",
 		"data/skybox/fluffballday/FluffballDayFront.hdr",
 		"data/skybox/fluffballday/FluffballDayBack.hdr"
-	};
+	};*/
 	cubemapTexture = LoadCubemap(faces);
 
 	glGenVertexArrays(1, &cubeMapVAO);
@@ -1555,7 +1573,7 @@ void SkyboxDrawingProgram::Draw()
 	auto& config = engine->GetConfiguration();
 	auto& camera = engine->GetCamera();
 
-	const glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)config.screenWidth / (float)config.screenHeight, 0.1f, 10000.0f);
+	const glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, zNear, zFar);
 
 	glDepthMask(GL_TRUE);
 	glClear(GL_DEPTH_BUFFER_BIT);
