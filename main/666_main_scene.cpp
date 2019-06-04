@@ -30,6 +30,9 @@ public:
 	void Draw() override;
 	void Destroy() override;
 	void ProcessInput();
+
+private:
+	glm::vec3 speed = glm::vec3(0, 0.01f, 0.05f);
 };
 
 void CameraProgram::Init()
@@ -40,6 +43,13 @@ void CameraProgram::Init()
 void CameraProgram::Draw()
 {
 	ProcessInput();
+
+	auto* engine = Engine::GetPtr();
+	if(engine->GetCulling())
+	{
+		auto& camera = engine->GetCamera();
+		camera.Position += speed * engine->GetDeltaTime();
+	}
 }
 
 void CameraProgram::Destroy()
@@ -293,11 +303,12 @@ enum ModelType
 
 struct ModelInfos
 {
-	glm::vec3 position, rotation;
-	float cameraDistance;
-	GLuint optiTexture;
+	glm::vec3 position, rotation; // Position and rotation
+	float cameraDistance; // Distance calculated each frame from the camera
+
+	// Sort operator
 	bool operator<(const ModelInfos& that) const {
-		// Sort in reverse order : far particles drawn first.
+		// Sort in reverse order : far models drawn first.
 		return this->cameraDistance > that.cameraDistance;
 	}
 };
@@ -538,8 +549,6 @@ void ModelDrawingProgram::InitModels()
 			rand() % 360,
 			0
 		);
-
-		//treeInfos[i].scale = treeScale  * (0.8f + (rand() % 5) / 10);
 
 		treeInfos[i].cameraDistance = -1.0f;
 	}
@@ -812,8 +821,6 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	rmt_BeginOpenGLSample(TreeDraw);
 	// Draw the trees
 	modelShaderProgram.Bind();
-	//modelShaderProgram.SetMat4("view", view);
-	//modelShaderProgram.SetMat4("projection", projection);
 	modelShaderProgram.SetMat4("VP", projection * view);
 	modelShaderProgram.SetVec3("viewPos", camera.Position);
 	light.Bind(modelShaderProgram, 0);
@@ -827,16 +834,11 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	glBindBuffer(GL_ARRAY_BUFFER, treeRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.x * 3 * sizeof(float), &treeRotations);
 
-	//modelShaderProgram.SetFloat("aScale", treeScale);
 	this->treeModel.Draw(modelShaderProgram, modelCount.x);
 	rmt_EndOpenGLSample(); // TreeDraw
 
 	rmt_BeginOpenGLSample(BushDraw);
 	// Draw the bushes
-	//bushShaderProgram.Bind();
-	//modelShaderProgram.SetMat4("view", view);
-	//modelShaderProgram.SetMat4("projection", projection);
-	//bushShaderProgram.SetMat4("VP", projection * view);
 
 	// Update the buffer with all the positions
 	glBindBuffer(GL_ARRAY_BUFFER, bushPositionBuffer);
@@ -853,8 +855,6 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 
 	rmt_BeginOpenGLSample(FlowerDraw);
 	// Draw the flowers
-	//flowerShaderProgram.Bind();
-	//flowerShaderProgram.SetMat4("VP", VP);
 
 	// Update the buffer with all the positions
 	glBindBuffer(GL_ARRAY_BUFFER, flowerPositionBuffer);
@@ -1603,25 +1603,7 @@ void SkyboxDrawingProgram::Init()
 		"data/skybox/nebula/purplenebula_ft.tga",
 		"data/skybox/nebula/purplenebula_bk.tga"
 	};
-	/*std::vector<std::string> faces =
-	{
-		"data/skybox/emerald/emeraldfog_lf.tga",
-		"data/skybox/emerald/emeraldfog_rt.tga",
-		"data/skybox/emerald/emeraldfog_up.tga",
-		"data/skybox/emerald/emeraldfog_dn.tga",
-		"data/skybox/emerald/emeraldfog_ft.tga",
-		"data/skybox/emerald/emeraldfog_bk.tga"
-	};*/
-	/*
-	std::vector<std::string> faces =
-	{
-		"data/skybox/fluffballday/FluffballDayLeft.hdr",
-		"data/skybox/fluffballday/FluffballDayRight.hdr",
-		"data/skybox/fluffballday/FluffballDayTop.hdr",
-		"data/skybox/fluffballday/FluffballDayBottom.hdr",
-		"data/skybox/fluffballday/FluffballDayFront.hdr",
-		"data/skybox/fluffballday/FluffballDayBack.hdr"
-	};*/
+
 	cubemapTexture = LoadCubemap(faces);
 
 	glGenVertexArrays(1, &cubeMapVAO);

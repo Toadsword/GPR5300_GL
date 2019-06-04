@@ -22,8 +22,6 @@ void main()
     // also gamma correct while we're at it       
     result = pow(result, vec3(1.0 / gamma));
 
-	if(gl_FragColor.r < 0.9 && gl_FragColor.g < 0.9 && gl_FragColor.b < 0.9)
-		FragColor = gl_FragColor + vec4(result, a);
-	else
-		FragColor = vec4(result, a);
+	
+	FragColor = gl_FragColor + vec4(result, a);
 }

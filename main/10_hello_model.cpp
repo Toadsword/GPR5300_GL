@@ -37,7 +37,7 @@ void HelloOutlineDrawingProgram::Init()
 	// "data/models/nanosuit2/nanosuit.obj"
 	// "data/models/van_gogh_room/Enter a title.obj"
 	// 
-	model.Init("data/models/nanosuit2/nanosuit.blend");
+	model.Init("data/models/voxel_flower/flower.obj");
 }
 
 void HelloOutlineDrawingProgram::Draw()

@@ -2,12 +2,13 @@ out vec4 FragColor;
 in VS_OUT vs_out;
 
 uniform EngineMaterial material;
+uniform sampler2D normalMap;
 //uniform sampler2D texture_diffuse1;
 in vec3 out_Normal;
 uniform vec4 unlitColor = vec4(0.25,0.25,0.25,1);
 uniform vec4 litColor = vec4(1,1,1,1);
 uniform float shininess = 32.0;
-uniform int toonLayers = 6;
+uniform int toonLayers = 4;
 
 void main()
 {    
