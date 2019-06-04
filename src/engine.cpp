@@ -375,14 +375,15 @@ void Engine::DrawFrustrumView()
 	inFrustrumDraw = true;
 	//Bind frame buffer
 
+	//To draw it in the top right corner
 	glViewport(configuration.screenWidth*0.5, configuration.screenHeight*0.5, configuration.screenWidth*0.5,configuration.screenHeight*0.5);
 	for (auto drawingProgram : drawingPrograms)
 	{
 		drawingProgram->Draw();
 	}
+	//Reset viewpoer
 	glViewport(0, 0, configuration.screenWidth, configuration.screenHeight);
 
-	//To draw it in the bottom right corner
 
 	inFrustrumDraw = false;
 }

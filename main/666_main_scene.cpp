@@ -15,6 +15,16 @@
 const float zNear = 0.1f;
 const float zFar = 2000.0f;
 
+/* Lights informations */
+const bool enableDirectionnalLight = true;
+const glm::vec3 directionnalLightDir = glm::vec3(0.5f, -1.0f, 0.4f);
+const float directionnalLightIntensity = 10.0f;
+const glm::vec3 lightColor = glm::vec3(1, 1, 1);
+
+const glm::vec3 pointLightPos = glm::vec3(3, 0, 3);
+const float lightDistance = 5.0f;
+const float pointLightIntensity = 1.0f;
+
 #define Camera
 #ifdef  Camera
 class CameraProgram : public DrawingProgram
@@ -87,7 +97,7 @@ public:
 private:
 	Shader shaderProgram;
 
-	float lightPos[3] = { 0,0,-9.5 };
+	float lightPos[3] = { 0,5,-9.5 };
 
 	unsigned VBO[2] = {};
 	unsigned int VAO = 0;
@@ -111,6 +121,8 @@ private:
 	const size_t verticesCount = terrainWidth * terrainHeight;
 	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
 
+	DirectionLight directionLight;
+	PointLight light;
 };
 
 void TerrainDrawingProgram::Init()
@@ -120,6 +132,9 @@ void TerrainDrawingProgram::Init()
 	vertices = (float*)calloc(3 * verticesCount, sizeof(float));//vec3, so 3 floats
 	texCoords = (float*)calloc(2 * verticesCount, sizeof(float));//vec2, so 2 floats
 
+	/**********************************************************/
+	/***					Config Terrain					***/
+	/**********************************************************/
 	for (size_t i = 0l; i < verticesCount; i++)
 	{
 		vertices[3 * i] = -(float)terrainWidth * terrainResolution / 2.0f + (float)(i % terrainWidth) * terrainResolution;//x
@@ -185,6 +200,17 @@ void TerrainDrawingProgram::Init()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, faceCount * 3 * sizeof(unsigned), indices, GL_STATIC_DRAW);
 	//unbind Vertex Array
 	glBindVertexArray(0);
+
+	/**********************************************/
+	/***			Config Lights				***/
+	/**********************************************/
+	directionLight.direction = directionnalLightDir;
+	directionLight.intensity = directionnalLightIntensity;
+	directionLight.color = lightColor;
+
+	light.position = pointLightPos;
+	light.distance = lightDistance;
+	light.intensity = pointLightIntensity;
 }
 
 void TerrainDrawingProgram::Draw()
@@ -206,8 +232,13 @@ void TerrainDrawingProgram::Draw()
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)config.screenWidth / (float)config.screenHeight, zNear, zFar);
 
 	shaderProgram.Bind();
-	shaderProgram.SetVec3("lightPos", lightPos);
 	shaderProgram.SetVec3("viewPos", camera.Position);
+
+	//Bind light
+	shaderProgram.SetBool("directionalLightEnable", true);
+	directionLight.Bind(shaderProgram, 0);
+	light.Bind(shaderProgram, 0);
+	shaderProgram.SetInt("pointLightsNmb", 1);
 
 	shaderProgram.SetMat4("view", view);
 	shaderProgram.SetMat4("projection", projection);
@@ -216,8 +247,8 @@ void TerrainDrawingProgram::Draw()
 	shaderProgram.SetFloat("heightOrigin", terrainOriginY);
 
 	shaderProgram.SetInt("heightMap", 0);
-	shaderProgram.SetInt("diffuseMap", 1);
-	shaderProgram.SetInt("normalMap", 2);
+	shaderProgram.SetInt("material.texture_diffuse1", 1);
+	shaderProgram.SetInt("material.texture_normal", 2);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
@@ -258,12 +289,13 @@ void TerrainDrawingProgram::UpdateUi()
 #define Models
 #ifdef Models
 const unsigned numTrees = 500;
+const unsigned numBushes = 400;
+const unsigned numFlowers = 300;
+/*
 const float treeScale = 0.5f;
-const unsigned numBushes = 200;
 const float bushScale = 0.5f;
-const unsigned numFlowers = 5;
 const float flowerScale = 1.0f;
-
+*/
 enum ModelType
 {
 	TREE = 0,
@@ -304,7 +336,6 @@ private:
 	glm::vec3 modelCounts;
 
 	Shader modelShaderProgram;
-	Shader bushShaderProgram;
 
 	Model treeModel;
 	Model bushModel;
@@ -356,6 +387,10 @@ private:
 	float ssaoRadius = 0.5f;
 	int kernelSize = 64;
 	*/
+
+
+	DirectionLight directionLight;
+	PointLight light;
 };
 
 void ModelDrawingProgram::Init()
@@ -364,6 +399,17 @@ void ModelDrawingProgram::Init()
 	auto* engine = Engine::GetPtr();
 	auto& config = engine->GetConfiguration();
 	InitModels();
+
+	/**********************************************/
+	/***			Config Lights				***/
+	/**********************************************/
+	directionLight.direction = directionnalLightDir;
+	directionLight.intensity = directionnalLightIntensity;
+	directionLight.color = lightColor;
+	
+	light.position = pointLightPos;
+	light.distance = lightDistance;
+	light.intensity = pointLightIntensity;
 
 	/******************************************************************************/
 	/***						SSAO and Ambiant occlusion						***/
@@ -490,11 +536,6 @@ void ModelDrawingProgram::InitModels()
 		"shaders/666_main_scene/model_instanced.frag");
 	shaders.push_back(&modelShaderProgram);
 
-	bushShaderProgram.CompileSource(
-		"shaders/666_main_scene/model_instanced.vert",
-		"shaders/666_main_scene/model_instanced.frag");
-	shaders.push_back(&bushShaderProgram);
-
 	treeModel.Init("data/models/voxel_tree/Tree.obj", true);
 	bushModel.Init("data/models/voxel_bush/Bush.obj", true);
 	flowerModel.Init("data/models/voxel_flower/Flower.obj", true);
@@ -514,6 +555,8 @@ void ModelDrawingProgram::InitModels()
 			rand() % 360,
 			0
 		);
+
+		//treeInfos[i].scale = treeScale  * (0.8f + (rand() % 5) / 10);
 
 		treeInfos[i].cameraDistance = -1.0f;
 	}
@@ -557,6 +600,8 @@ void ModelDrawingProgram::InitModels()
 			rand() % 360,
 			0
 		);
+
+		//bushInfos[i].scale = bushScale * (0.8f + (rand() % 5) / 10);
 
 		bushInfos[i].cameraDistance = -1.0f;
 	}
@@ -602,6 +647,8 @@ void ModelDrawingProgram::InitModels()
 			rand() % 360,
 			0
 		);
+
+		//flowerInfos[i].scale = flowerScale * (0.8f + (rand() % 5) / 10);
 
 		flowerInfos[i].cameraDistance = -1.0f;
 	}
@@ -785,6 +832,11 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	//modelShaderProgram.SetMat4("view", view);
 	//modelShaderProgram.SetMat4("projection", projection);
 	modelShaderProgram.SetMat4("VP", projection * view);
+	modelShaderProgram.SetVec3("viewPos", camera.Position);
+	modelShaderProgram.SetBool("directionalLightEnable", true);
+	directionLight.Bind(modelShaderProgram, 0);
+	light.Bind(modelShaderProgram, 0);
+	modelShaderProgram.SetInt("pointLightsNmb", 1);
 
 	// Update the buffer with all the positions
 	glBindBuffer(GL_ARRAY_BUFFER, treePositionBuffer);
@@ -794,7 +846,7 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	glBindBuffer(GL_ARRAY_BUFFER, treeRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.x * 3 * sizeof(float), &treeRotations);
 
-	modelShaderProgram.SetFloat("aScale", treeScale);
+	//modelShaderProgram.SetFloat("aScale", treeScale);
 	this->treeModel.Draw(modelShaderProgram, modelCount.x);
 	rmt_EndOpenGLSample(); // TreeDraw
 
@@ -813,7 +865,7 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	glBindBuffer(GL_ARRAY_BUFFER, bushRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.y * 3 * sizeof(float), &bushRotations);
 
-	modelShaderProgram.SetFloat("aScale", bushScale);
+	//modelShaderProgram.SetFloat("aScale", bushScale);
 	this->bushModel.Draw(modelShaderProgram, modelCount.y);
 
 	rmt_EndOpenGLSample(); // BushDraw
@@ -830,7 +882,7 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	// Update the buffer with all the rotations
 	glBindBuffer(GL_ARRAY_BUFFER, flowerRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.z * 3 * sizeof(float), &flowerRotations);
-	modelShaderProgram.SetFloat("aScale", flowerScale);
+	//modelShaderProgram.SetFloat("aScale", flowerScale);
 	this->flowerModel.Draw(modelShaderProgram, modelCount.z);
 	rmt_EndOpenGLSample(); // FlowerDraw
 
@@ -852,7 +904,7 @@ glm::vec3 ModelDrawingProgram::CullModels()
 	{
 		BoundingSphere& boundingSphere = boundingSpheres[j];
 		boundingSphere.center = treeModel.modelCenter + treeInfos[j].position;
-		boundingSphere.radius = treeModel.modelRadius * treeScale * 2.0f;
+		boundingSphere.radius = treeModel.modelRadius;// * treeScale;
 	}
 	rmt_EndCPUSample(); //Generate sphere
 	modelCount.x = CullingTest(treeInfos, numTrees, TREE);
@@ -863,7 +915,7 @@ glm::vec3 ModelDrawingProgram::CullModels()
 	{
 		BoundingSphere& boundingSphere = boundingSpheres[j];
 		boundingSphere.center = bushModel.modelCenter + bushInfos[j].position;
-		boundingSphere.radius = bushModel.modelRadius * bushScale * 2.0f;
+		boundingSphere.radius = bushModel.modelRadius;// * bushScale;
 	}
 	rmt_EndCPUSample(); //Generate sphere
 	modelCount.y = CullingTest(bushInfos, numBushes, BUSH);
@@ -874,7 +926,7 @@ glm::vec3 ModelDrawingProgram::CullModels()
 	{
 		BoundingSphere& boundingSphere = boundingSpheres[j];
 		boundingSphere.center = flowerModel.modelCenter + flowerInfos[j].position;
-		boundingSphere.radius = flowerModel.modelRadius * flowerScale * 2.0f;
+		boundingSphere.radius = flowerModel.modelRadius; // * flowerScale;
 	}
 	rmt_EndCPUSample(); //Generate sphere
 	modelCount.z = CullingTest(flowerInfos, numFlowers, FLOWER);
@@ -1050,7 +1102,7 @@ struct FireflyParticle {
 	}
 };
 
-const int MaxParticles = 80;
+const int MaxParticles = 40;
 
 class FireflyDrawingProgram : public DrawingProgram
 {
@@ -1071,8 +1123,9 @@ private:
 
 	//Consts (Editable with Imgui)
 	int NumFireflies = MaxParticles;
-	GLfloat botRightLimit[3] = { 3.0f, 3.0f, 3.0f };
-	int range[3] = { 40, 20, 40 };
+	int numFirefliesToDraw = NumFireflies;
+	GLfloat botRightLimit[3] = { 3.0f, -2.0f, 3.0f };
+	int range[3] = { 20, 10, 20 };
 
 	Plane hdrPlane;
 	GLuint hdrFBO = 0;
@@ -1308,7 +1361,8 @@ void FireflyDrawingProgram::Draw()
 	glBindTexture(GL_TEXTURE_2D, fireflyTexture);
 
 	//Process particles
-	const int ParticlesCount = ProcessParticles(dt);
+	if(engine->GetCulling())
+		numFirefliesToDraw = ProcessParticles(dt);
 
 	// Pass billboard reuqired informations to the shader
 	fireflyShaderProgram.SetVec3("CameraRight", camera.Right);
@@ -1318,19 +1372,19 @@ void FireflyDrawingProgram::Draw()
 
 	// Update the buffer with all the positions
 	glBindBuffer(GL_ARRAY_BUFFER, particlesPositionBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesPosition);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numFirefliesToDraw * 3 * sizeof(float), &particlesPosition);
 
 	// Update the buffer with all the Colors
 	glBindBuffer(GL_ARRAY_BUFFER, particlesColorBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesColor);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numFirefliesToDraw * 3 * sizeof(float), &particlesColor);
 
 	// Update the buffer with all the Scale
 	glBindBuffer(GL_ARRAY_BUFFER, particlesScaleBuffer);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, ParticlesCount * 3 * sizeof(float), &particlesScale);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numFirefliesToDraw * 3 * sizeof(float), &particlesScale);
 
 	// Draw the particles
 	//glDepthFunc(GL_ALWAYS);
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ParticlesCount);
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, numFirefliesToDraw);
 	glDepthMask(GL_FALSE);
 	//glDisable(GL_DEPTH_TEST);
 	//glDepthMask(GL_FALSE); // Don't write to depth buffer
