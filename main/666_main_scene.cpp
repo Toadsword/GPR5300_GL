@@ -972,11 +972,11 @@ unsigned ModelDrawingProgram::CullingTest(std::vector<ModelInfos>& models, unsig
 
 	const float aspect = static_cast<float>(config.screenWidth) / static_cast<float>(config.screenHeight);
 	const glm::vec3 leftDir = glm::normalize(
-		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) * aspect, mainCamera.Up));
+		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) / 1.8f * aspect, mainCamera.Up));
 	const glm::vec3 leftNormal = glm::normalize(glm::cross(leftDir, mainCamera.Up));
 
 	const glm::vec3 rightDir = glm::normalize(
-		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) * aspect, mainCamera.Up));
+		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) / 1.8f  * aspect, mainCamera.Up));
 	const glm::vec3 rightNormal = glm::normalize(-glm::cross(rightDir, mainCamera.Up));
 
 	const glm::vec3 upDir = glm::normalize(
