@@ -16,14 +16,10 @@ const float zNear = 0.1f;
 const float zFar = 2000.0f;
 
 /* Lights informations */
-const bool enableDirectionnalLight = true;
-const glm::vec3 directionnalLightDir = glm::vec3(0.5f, -1.0f, 0.4f);
-const float directionnalLightIntensity = 10.0f;
-const glm::vec3 lightColor = glm::vec3(1, 1, 1);
-
+const glm::vec3 lightColor = glm::vec3(1, 0.8, 0.8);
 const glm::vec3 pointLightPos = glm::vec3(3, 0, 3);
-const float lightDistance = 5.0f;
-const float pointLightIntensity = 1.0f;
+const float lightDistance = 7.0f;
+const float pointLightIntensity = 2.0f;
 
 #define Camera
 #ifdef  Camera
@@ -97,8 +93,6 @@ public:
 private:
 	Shader shaderProgram;
 
-	float lightPos[3] = { 0,5,-9.5 };
-
 	unsigned VBO[2] = {};
 	unsigned int VAO = 0;
 	unsigned int EBO = 0;
@@ -121,7 +115,6 @@ private:
 	const size_t verticesCount = terrainWidth * terrainHeight;
 	const size_t faceCount = 2 * (terrainWidth - 1) * (terrainHeight - 1);
 
-	DirectionLight directionLight;
 	PointLight light;
 };
 
@@ -204,9 +197,6 @@ void TerrainDrawingProgram::Init()
 	/**********************************************/
 	/***			Config Lights				***/
 	/**********************************************/
-	directionLight.direction = directionnalLightDir;
-	directionLight.intensity = directionnalLightIntensity;
-	directionLight.color = lightColor;
 
 	light.position = pointLightPos;
 	light.distance = lightDistance;
@@ -234,12 +224,6 @@ void TerrainDrawingProgram::Draw()
 	shaderProgram.Bind();
 	shaderProgram.SetVec3("viewPos", camera.Position);
 
-	//Bind light
-	shaderProgram.SetBool("directionalLightEnable", true);
-	directionLight.Bind(shaderProgram, 0);
-	light.Bind(shaderProgram, 0);
-	shaderProgram.SetInt("pointLightsNmb", 1);
-
 	shaderProgram.SetMat4("view", view);
 	shaderProgram.SetMat4("projection", projection);
 	shaderProgram.SetMat4("model", model);
@@ -248,7 +232,7 @@ void TerrainDrawingProgram::Draw()
 
 	shaderProgram.SetInt("heightMap", 0);
 	shaderProgram.SetInt("material.texture_diffuse1", 1);
-	shaderProgram.SetInt("material.texture_normal", 2);
+	shaderProgram.SetInt("normalMap", 2);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, terrainHeightMap);
@@ -256,6 +240,10 @@ void TerrainDrawingProgram::Draw()
 	glBindTexture(GL_TEXTURE_2D, terrainTexture);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, terrainNormalMap);
+
+	//Bind light
+	light.Bind(shaderProgram, 0);
+	shaderProgram.SetInt("pointLightsNmb", 1);
 
 	glBindVertexArray(VAO);
 	glDrawElements(GL_TRIANGLES, faceCount * 3, GL_UNSIGNED_INT, 0);
@@ -388,8 +376,6 @@ private:
 	int kernelSize = 64;
 	*/
 
-
-	DirectionLight directionLight;
 	PointLight light;
 };
 
@@ -403,9 +389,6 @@ void ModelDrawingProgram::Init()
 	/**********************************************/
 	/***			Config Lights				***/
 	/**********************************************/
-	directionLight.direction = directionnalLightDir;
-	directionLight.intensity = directionnalLightIntensity;
-	directionLight.color = lightColor;
 	
 	light.position = pointLightPos;
 	light.distance = lightDistance;
@@ -833,8 +816,6 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	//modelShaderProgram.SetMat4("projection", projection);
 	modelShaderProgram.SetMat4("VP", projection * view);
 	modelShaderProgram.SetVec3("viewPos", camera.Position);
-	modelShaderProgram.SetBool("directionalLightEnable", true);
-	directionLight.Bind(modelShaderProgram, 0);
 	light.Bind(modelShaderProgram, 0);
 	modelShaderProgram.SetInt("pointLightsNmb", 1);
 

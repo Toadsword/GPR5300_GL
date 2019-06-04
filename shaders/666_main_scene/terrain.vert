@@ -5,6 +5,7 @@ layout (location = 3) in vec3 aTangent;
 layout (location = 4) in vec3 aBitangent;
 
 out VS_OUT vs_out;
+out vec3 out_Normal;
 
 uniform vec3 lightPos;
 uniform vec3 viewPos;
@@ -17,6 +18,7 @@ uniform float heightResolution;
 uniform float heightOrigin;
 
 uniform sampler2D heightMap;
+uniform sampler2D normalMap;
 
 void main()
 {
@@ -27,9 +29,10 @@ void main()
 
 	mat3 normalMatrix = transpose(inverse(mat3(model)));
     vec3 T = normalize(normalMatrix * aTangent);
-    vec3 N = normalize(normalMatrix * aNormal);
+    vec3 N = normalize(normalMatrix * vec3(texture(normalMap, aTexCoords)));
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
+	out_Normal = N;
     
     vs_out.invTBN  = mat3(T, B, N);
 
