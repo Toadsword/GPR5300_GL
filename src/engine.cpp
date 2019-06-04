@@ -128,6 +128,10 @@ void Engine::Init()
 	previousFrameTime = engineStartTime;
 
 	camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), window);
+	frustrumCamera = Camera(glm::vec3(40.0f, 20.0f, 40.0f), window);
+	frustrumCamera.Pitch = -23;
+	frustrumCamera.Yaw = -150;
+	frustrumCamera.updateCameraVectors();
 #endif
 	
 	for (auto drawingProgram : drawingPrograms)
@@ -185,8 +189,14 @@ void Engine::Loop()
 		{
 			switch(event.key.keysym.scancode)
 			{
-			case SDL_SCANCODE_1:
+			case SDL_SCANCODE_F1:
 				SwitchWireframeMode();
+				break;
+			case SDL_SCANCODE_F2:
+				enableViewFrustrumCamera = !enableViewFrustrumCamera;
+				break;
+			case SDL_SCANCODE_F3:
+				enableImGui = !enableImGui;
 				break;
 			case SDL_SCANCODE_LALT:
 				camera.SwitchWrapMode();
@@ -227,6 +237,10 @@ void Engine::Loop()
 	for (auto drawingProgram : drawingPrograms)
 	{
 		drawingProgram->Draw();
+	}
+	if(enableViewFrustrumCamera)
+	{
+		DrawFrustrumView();
 	}
 	if (enableImGui)
 	{
@@ -356,6 +370,23 @@ void Engine::UpdateUi()
 	}
 }
 
+void Engine::DrawFrustrumView()
+{
+	inFrustrumDraw = true;
+	//Bind frame buffer
+
+	glViewport(configuration.screenWidth*0.5, configuration.screenHeight*0.5, configuration.screenWidth*0.5,configuration.screenHeight*0.5);
+	for (auto drawingProgram : drawingPrograms)
+	{
+		drawingProgram->Draw();
+	}
+	glViewport(0, 0, configuration.screenWidth, configuration.screenHeight);
+
+	//To draw it in the bottom right corner
+
+	inFrustrumDraw = false;
+}
+
 float Engine::GetDeltaTime()
 {
 #ifdef USE_SDL2
@@ -384,8 +415,7 @@ Engine* Engine::GetPtr()
 void Engine::SwitchWireframeMode()
 {
 	glPolygonMode(GL_FRONT_AND_BACK, wireframeMode ? GL_FILL : GL_LINE);
-	wireframeMode = !wireframeMode;
-	
+	wireframeMode = !wireframeMode;	
 }
 
 Configuration &Engine::GetConfiguration()
@@ -400,5 +430,12 @@ InputManager& Engine::GetInputManager()
 
 Camera& Engine::GetCamera()
 {
+	if (inFrustrumDraw)
+		return frustrumCamera;
 	return camera;
+}
+
+bool Engine::GetCulling()
+{
+	return !inFrustrumDraw;
 }

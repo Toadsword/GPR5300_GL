@@ -42,6 +42,8 @@ void CameraProgram::Destroy()
 
 void CameraProgram::ProcessInput()
 {
+	if (!Engine::GetPtr()->GetCulling())
+		return;
 	Engine * engine = Engine::GetPtr();
 	auto& camera = engine->GetCamera();
 	auto& inputManager = engine->GetInputManager();
@@ -298,6 +300,8 @@ private:
 	void DrawModels(glm::vec3);
 	glm::vec3 CullModels();
 	unsigned CullingTest(std::vector<ModelInfos>& models, unsigned maxNum, ModelType modelType);
+
+	glm::vec3 modelCounts;
 
 	Shader modelShaderProgram;
 	Shader bushShaderProgram;
@@ -648,8 +652,11 @@ void ModelDrawingProgram::Draw()
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	*/
-	
-	DrawModels(CullModels());
+	auto* engine = Engine::GetPtr();
+	if(engine->GetCulling())
+		modelCounts = CullModels();
+	DrawModels(modelCounts);
+
 	/*
 	rmt_EndOpenGLSample(); //GBUFFER
 

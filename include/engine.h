@@ -54,6 +54,7 @@ public:
 	Configuration& GetConfiguration();
 	InputManager& GetInputManager();
 	Camera& GetCamera();
+	bool GetCulling();
 	void AddDrawingProgram(DrawingProgram* drawingProgram);
 	std::vector<DrawingProgram*>& GetDrawingPrograms() { return drawingPrograms; };
 
@@ -61,6 +62,7 @@ public:
 	static Engine* GetPtr();
 private:
 	void SwitchWireframeMode();
+	void DrawFrustrumView();
 	static Engine* enginePtr;
 
 
@@ -78,6 +80,7 @@ private:
 	std::vector<DrawingProgram*> drawingPrograms;
 	InputManager inputManager;
 	Camera camera;
+	Camera frustrumCamera;
 	Configuration configuration;
 	Remotery* rmt;
 	int selectedDrawingProgram = -1;
@@ -86,6 +89,8 @@ private:
 	bool drawingProgramsHierarchy = true;
 	bool inspector = true;
 	bool enableImGui = true;
+	bool enableViewFrustrumCamera = false;
+	bool inFrustrumDraw = false;
 	bool running = false;
 };
 
