@@ -256,11 +256,18 @@ void TerrainDrawingProgram::UpdateUi()
 #define Models
 #ifdef Models
 const unsigned numTrees = 500;
-const float scaleTree = 0.5f;
+const float treeScale = 0.5f;
 const unsigned numBushes = 200;
-const float scaleBush = 0.5f;
+const float bushScale = 0.5f;
 const unsigned numFlowers = 5;
-const float scaleFlower = 1.0f;
+const float flowerScale = 1.0f;
+
+enum ModelType
+{
+	TREE = 0,
+	BUSH = 1,
+	FLOWER = 2
+};
 
 struct ModelInfos
 {
@@ -290,7 +297,7 @@ private:
 	void InitModels();
 	void DrawModels(glm::vec3);
 	glm::vec3 CullModels();
-	unsigned CullingTest(std::vector<ModelInfos>& models, unsigned maxNum);
+	unsigned CullingTest(std::vector<ModelInfos>& models, unsigned maxNum, ModelType modelType);
 
 	Shader modelShaderProgram;
 	Shader bushShaderProgram;
@@ -780,7 +787,7 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	glBindBuffer(GL_ARRAY_BUFFER, treeRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.x * 3 * sizeof(float), &treeRotations);
 
-	modelShaderProgram.SetFloat("aScale", scaleTree);
+	modelShaderProgram.SetFloat("aScale", treeScale);
 	this->treeModel.Draw(modelShaderProgram, modelCount.x);
 	rmt_EndOpenGLSample(); // TreeDraw
 
@@ -799,7 +806,7 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	glBindBuffer(GL_ARRAY_BUFFER, bushRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.y * 3 * sizeof(float), &bushRotations);
 
-	modelShaderProgram.SetFloat("aScale", scaleBush);
+	modelShaderProgram.SetFloat("aScale", bushScale);
 	this->bushModel.Draw(modelShaderProgram, modelCount.y);
 
 	rmt_EndOpenGLSample(); // BushDraw
@@ -816,7 +823,7 @@ void ModelDrawingProgram::DrawModels(glm::vec3 modelCount)
 	// Update the buffer with all the rotations
 	glBindBuffer(GL_ARRAY_BUFFER, flowerRotationBuffer);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, modelCount.z * 3 * sizeof(float), &flowerRotations);
-	modelShaderProgram.SetFloat("aScale", scaleFlower);
+	modelShaderProgram.SetFloat("aScale", flowerScale);
 	this->flowerModel.Draw(modelShaderProgram, modelCount.z);
 	rmt_EndOpenGLSample(); // FlowerDraw
 
@@ -837,34 +844,33 @@ glm::vec3 ModelDrawingProgram::CullModels()
 	for (size_t j = 0; j < numTrees; j++)
 	{
 		BoundingSphere& boundingSphere = boundingSpheres[j];
-		boundingSphere.center = treeModel.modelCenter;
-		boundingSphere.radius = treeModel.modelRadius * scaleTree;
+		boundingSphere.center = treeModel.modelCenter + treeInfos[j].position;
+		boundingSphere.radius = treeModel.modelRadius * treeScale * 2.0f;
 	}
 	rmt_EndCPUSample(); //Generate sphere
-	modelCount.x = CullingTest(treeInfos, numTrees);
+	modelCount.x = CullingTest(treeInfos, numTrees, TREE);
 
 	//Generate the list of spheres
 	rmt_BeginCPUSample(CalculateSphereTreeCPU, 0);
 	for (size_t j = 0; j < numBushes; j++)
 	{
 		BoundingSphere& boundingSphere = boundingSpheres[j];
-		boundingSphere.center = bushModel.modelCenter;
-		boundingSphere.radius = bushModel.modelRadius * scaleBush;
+		boundingSphere.center = bushModel.modelCenter + bushInfos[j].position;
+		boundingSphere.radius = bushModel.modelRadius * bushScale * 2.0f;
 	}
 	rmt_EndCPUSample(); //Generate sphere
-	modelCount.y = CullingTest(bushInfos, numBushes);
-
+	modelCount.y = CullingTest(bushInfos, numBushes, BUSH);
 
 	//Generate the list of spheres
 	rmt_BeginCPUSample(CalculateSphereTreeCPU, 0);
 	for (size_t j = 0; j < numFlowers; j++)
 	{
 		BoundingSphere& boundingSphere = boundingSpheres[j];
-		boundingSphere.center = flowerModel.modelCenter;
-		boundingSphere.radius = flowerModel.modelRadius * scaleFlower;
+		boundingSphere.center = flowerModel.modelCenter + flowerInfos[j].position;
+		boundingSphere.radius = flowerModel.modelRadius * flowerScale * 2.0f;
 	}
 	rmt_EndCPUSample(); //Generate sphere
-	modelCount.z = CullingTest(flowerInfos, numFlowers);
+	modelCount.z = CullingTest(flowerInfos, numFlowers, FLOWER);
 
 	// Order the models
 	std::sort(&treeInfos[0], &treeInfos[numTrees - 1]);
@@ -914,10 +920,11 @@ glm::vec3 ModelDrawingProgram::CullModels()
 		flowerRotations[3 * i + 2] = f.rotation.z;
 	}
 
+
 	return modelCount;
 }
 
-unsigned ModelDrawingProgram::CullingTest(std::vector<ModelInfos>& models, unsigned maxNum)
+unsigned ModelDrawingProgram::CullingTest(std::vector<ModelInfos>& models, unsigned maxNum, ModelType modelType)
 {
 	unsigned count = 0;
 	auto& config = Engine::GetPtr()->GetConfiguration();
@@ -925,23 +932,36 @@ unsigned ModelDrawingProgram::CullingTest(std::vector<ModelInfos>& models, unsig
 
 	const float aspect = static_cast<float>(config.screenWidth) / static_cast<float>(config.screenHeight);
 	const glm::vec3 leftDir = glm::normalize(
-		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) / 2.0f * aspect, mainCamera.Up));
+		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) * aspect, mainCamera.Up));
 	const glm::vec3 leftNormal = glm::normalize(glm::cross(leftDir, mainCamera.Up));
 
 	const glm::vec3 rightDir = glm::normalize(
-		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) / 2.0f * aspect, mainCamera.Up));
+		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) * aspect, mainCamera.Up));
 	const glm::vec3 rightNormal = glm::normalize(-glm::cross(rightDir, mainCamera.Up));
 
 	const glm::vec3 upDir = glm::normalize(
-		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom) / 2.0f, mainCamera.Right));
+		glm::rotate(mainCamera.Front, -glm::radians(mainCamera.Zoom), mainCamera.Right));
 	const glm::vec3 upNormal = glm::normalize(glm::cross(upDir, mainCamera.Right));
 
 	const glm::vec3 downDir = glm::normalize(
-		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom) / 2.0f, mainCamera.Right));
+		glm::rotate(mainCamera.Front, glm::radians(mainCamera.Zoom), mainCamera.Right));
 	const glm::vec3 downNormal = glm::normalize(-glm::cross(downDir, mainCamera.Right));
 
 	for (size_t j = 0; j < maxNum; j++)
 	{
+		switch (modelType)
+		{
+		case TREE:
+			treeInfos[j].cameraDistance = -1;
+			break;
+		case BUSH:
+			bushInfos[j].cameraDistance = -1;
+			break;
+		case FLOWER:
+			flowerInfos[j].cameraDistance = -1;
+			break;
+		}
+
 		BoundingSphere& boundingSphere = boundingSpheres[j];
 		const glm::vec3 cameraToSphere = boundingSphere.center - mainCamera.Position;
 		//near culling
@@ -976,6 +996,19 @@ unsigned ModelDrawingProgram::CullingTest(std::vector<ModelInfos>& models, unsig
 		if (glm::dot(cameraToSphere, downNormal) > -boundingSphere.radius)
 		{
 			continue;
+		}
+
+		switch(modelType)
+		{
+		case TREE:
+			treeInfos[j].cameraDistance = glm::dot(treeInfos[j].position, mainCamera.Front) - glm::dot(mainCamera.Position, mainCamera.Front);
+			break;
+		case BUSH:
+			bushInfos[j].cameraDistance = glm::dot(bushInfos[j].position, mainCamera.Front) - glm::dot(mainCamera.Position, mainCamera.Front);
+			break;
+		case FLOWER:
+			flowerInfos[j].cameraDistance = glm::dot(flowerInfos[j].position, mainCamera.Front) - glm::dot(mainCamera.Position, mainCamera.Front);
+			break;
 		}
 
 		count++;
